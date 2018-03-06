@@ -37,12 +37,12 @@ int main(int argc, char* argv[])
         buf[idx] = 0;
     AES_init_ctx(&ctx, (uint8_t*)key);
     
-    AES_CTR_xcrypt_buffer(&ctx, buf, sizeof buf);
+    AES_CTR_xcrypt_buffer(&ctx, buf, sizeof(buf)*16);
 
     for (int idx = 0; idx< 16; idx++)
         cout << (int)buf[idx] << endl;
 
-    AES_CTR_xcrypt_buffer(&ctx, buf, sizeof buf);
+    AES_CTR_xcrypt_buffer(&ctx, buf, sizeof(buf)*16);
 
     for (int idx = 0; idx< 16; idx++)
         cout << (int)buf[idx] << endl;
