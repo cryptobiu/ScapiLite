@@ -1,5 +1,5 @@
  #!/bin/bash 
-function creteDirs
+function createDirs
 {
     mkdir -p buildUbuntu
     mkdir -p buildRaspberry
@@ -14,7 +14,7 @@ function build
     cd ..
 }
 
-creteDirs
+createDirs
 build "Ubuntu"
 build "Raspberry"
 build "Android"
