@@ -1,0 +1,64 @@
+
+{
+	"buildFiles" : [ "/home/liork/ScapiLite/ScapiLiteAPK/app/src/main/cpp/CMakeLists.txt" ],
+	"cleanCommands" : 
+	[
+		"/home/liork/Android/Sdk/cmake/3.6.4111459/bin/cmake --build /home/liork/ScapiLite/ScapiLiteAPK/app/.externalNativeBuild/cmake/release/arm64-v8a --target clean"
+	],
+	"cppFileExtensions" : [ "cpp" ],
+	"libraries" : 
+	{
+		"lib_gmp-Release-arm64-v8a" : 
+		{
+			"abi" : "arm64-v8a",
+			"artifactName" : "lib_gmp",
+			"buildType" : "release",
+			"output" : "/home/liork/ScapiLite/ScapiLiteAPK/app/src/main/cpp/../../../../distribution/GMP/lib/arm64-v8a/libgmp.so",
+			"toolchain" : "12830023112272777705"
+		},
+		"primitives-Release-arm64-v8a" : 
+		{
+			"abi" : "arm64-v8a",
+			"artifactName" : "primitives",
+			"buildCommand" : "/home/liork/Android/Sdk/cmake/3.6.4111459/bin/cmake --build /home/liork/ScapiLite/ScapiLiteAPK/app/.externalNativeBuild/cmake/release/arm64-v8a --target primitives",
+			"buildType" : "release",
+			"files" : 
+			[
+				
+				{
+					"flags" : "  --target=aarch64-none-linux-android --gcc-toolchain=/home/liork/Android/Sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64 --sysroot=/home/liork/Android/Sdk/ndk-bundle/sysroot  -Dprimitives_EXPORTS -I/home/liork/ScapiLite/ScapiLiteAPK/app/src/main/cpp/../../../../distribution/GMP/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/android/support/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include  -isystem /home/liork/Android/Sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=24 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11  -std=c++11 -O2 -DNDEBUG  -fPIC    -c ",
+					"src" : "/home/liork/ScapiLite/ScapiLiteAPK/app/src/main/cpp/native-lib.cpp",
+					"workingDirectory" : "/home/liork/ScapiLite/ScapiLiteAPK/app/.externalNativeBuild/cmake/release/arm64-v8a"
+				},
+				
+				{
+					"flags" : "  --target=aarch64-none-linux-android --gcc-toolchain=/home/liork/Android/Sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64 --sysroot=/home/liork/Android/Sdk/ndk-bundle/sysroot  -Dprimitives_EXPORTS -I/home/liork/ScapiLite/ScapiLiteAPK/app/src/main/cpp/../../../../distribution/GMP/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/android/support/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include  -isystem /home/liork/Android/Sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=24 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11  -std=c++11 -O2 -DNDEBUG  -fPIC    -c ",
+					"src" : "/home/liork/ScapiLite/ScapiLiteAPK/app/src/main/cpp/Prg.cpp",
+					"workingDirectory" : "/home/liork/ScapiLite/ScapiLiteAPK/app/.externalNativeBuild/cmake/release/arm64-v8a"
+				},
+				
+				{
+					"flags" : "  --target=aarch64-none-linux-android --gcc-toolchain=/home/liork/Android/Sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64 --sysroot=/home/liork/Android/Sdk/ndk-bundle/sysroot  -Dprimitives_EXPORTS -I/home/liork/ScapiLite/ScapiLiteAPK/app/src/main/cpp/../../../../distribution/GMP/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/android/support/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include  -isystem /home/liork/Android/Sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=24 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11  -std=c++11 -O2 -DNDEBUG  -fPIC    -c ",
+					"src" : "/home/liork/ScapiLite/ScapiLiteAPK/app/src/main/cpp/aes.cpp",
+					"workingDirectory" : "/home/liork/ScapiLite/ScapiLiteAPK/app/.externalNativeBuild/cmake/release/arm64-v8a"
+				},
+				
+				{
+					"flags" : "  --target=aarch64-none-linux-android --gcc-toolchain=/home/liork/Android/Sdk/ndk-bundle/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64 --sysroot=/home/liork/Android/Sdk/ndk-bundle/sysroot  -Dprimitives_EXPORTS -I/home/liork/ScapiLite/ScapiLiteAPK/app/src/main/cpp/../../../../distribution/GMP/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/cxx-stl/llvm-libc++/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/android/support/include -isystem /home/liork/Android/Sdk/ndk-bundle/sources/cxx-stl/llvm-libc++abi/include  -isystem /home/liork/Android/Sdk/ndk-bundle/sysroot/usr/include/aarch64-linux-android -D__ANDROID_API__=24 -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -Wa,--noexecstack -Wformat -Werror=format-security -std=c++11  -std=c++11 -O2 -DNDEBUG  -fPIC    -c ",
+					"src" : "/home/liork/ScapiLite/ScapiLiteAPK/app/src/main/cpp/common.cpp",
+					"workingDirectory" : "/home/liork/ScapiLite/ScapiLiteAPK/app/.externalNativeBuild/cmake/release/arm64-v8a"
+				}
+			],
+			"output" : "/home/liork/ScapiLite/ScapiLiteAPK/app/build/intermediates/cmake/release/obj/arm64-v8a/libprimitives.so",
+			"toolchain" : "12830023112272777705"
+		}
+	},
+	"toolchains" : 
+	{
+		"12830023112272777705" : 
+		{
+			"cCompilerExecutable" : "/home/liork/Android/Sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/clang",
+			"cppCompilerExecutable" : "/home/liork/Android/Sdk/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++"
+		}
+	}
+}

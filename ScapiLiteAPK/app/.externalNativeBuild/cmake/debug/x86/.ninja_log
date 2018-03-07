@@ -1,0 +1,6 @@
+# ninja log v5
+0	71	0	CMakeFiles/primitives.dir/aes.cpp.o	bdf0f5289f149276
+0	383	0	CMakeFiles/primitives.dir/Prg.cpp.o	61c55cfb2dd99789
+0	452	0	CMakeFiles/primitives.dir/common.cpp.o	9195c523271b2f30
+0	477	0	CMakeFiles/primitives.dir/native-lib.cpp.o	8279bc35d7b1f0ee
+477	533	0	/home/liork/ScapiLite/ScapiLiteAPK/app/build/intermediates/cmake/debug/obj/x86/libprimitives.so	9e663ac1f6af11c0
