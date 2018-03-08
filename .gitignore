@@ -21,6 +21,7 @@ ScapiLiteAPK/.gradle/*
 ScapiLiteAPK/build/
 ScapiLiteAPK/app/CMakeFiles
 ScapiLiteAPK/app/.externalNativeBuild/*
+ScapiLiteAPK/app/app.iml
 
 # Ignore Gradle GUI config
 ScapiLiteAPK/gradle-app.setting
