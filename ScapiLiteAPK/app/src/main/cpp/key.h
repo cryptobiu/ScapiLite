@@ -1,7 +1,7 @@
 #ifndef SCAPILITE_KEY_H
 #define SCAPILITE_KEY_H
 
-#include "common.h"
+#include "Common.h"
 
 using namespace std;
 
