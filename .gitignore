@@ -14,3 +14,22 @@ cmake_install.cmake
 buildAndroid/
 buildRaspberry/
 buildUbuntu/
+
+# gitignore for ScapiLite APK
+
+ScapiLiteAPK/.gradle
+ScapiLiteAPK/build/
+ScapiLiteAPK/app/CMakeFiles
+ScapiLiteAPK/app/.externalNativeBuild
+
+# Ignore Gradle GUI config
+ScapiLiteAPK/gradle-app.setting
+
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!ScapiLiteAPK/gradle-wrapper.jar
+
+# Cache of project
+ScapiLiteAPK/.gradletasknamecache
+
+# # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
+# gradle/wrapper/gradle-wrapper.properties
