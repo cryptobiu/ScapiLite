@@ -17,10 +17,10 @@ buildUbuntu/
 
 # gitignore for ScapiLite APK
 
-ScapiLiteAPK/.gradle/
+ScapiLiteAPK/.gradle/*
 ScapiLiteAPK/build/
 ScapiLiteAPK/app/CMakeFiles
-ScapiLiteAPK/app/.externalNativeBuild
+ScapiLiteAPK/app/.externalNativeBuild/*
 
 # Ignore Gradle GUI config
 ScapiLiteAPK/gradle-app.setting
