@@ -1,3 +1,0 @@
-/home/liork/AndroidStudioProjects/ScapiLite/app/.externalNativeBuild/cmake/release/mips64/CMakeFiles/rebuild_cache.dir
-/home/liork/AndroidStudioProjects/ScapiLite/app/.externalNativeBuild/cmake/release/mips64/CMakeFiles/edit_cache.dir
-/home/liork/AndroidStudioProjects/ScapiLite/app/.externalNativeBuild/cmake/release/mips64/CMakeFiles/native-lib.dir
