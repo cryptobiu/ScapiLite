@@ -11,8 +11,17 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                arguments "-DANDROID_STL=c++_static"
+                arguments "-DANDROID_STL=c++_static" //DON'T Remove stl - std does not compile !!!!!
             }
+        }
+    }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include  'armeabi-v7a' //select ABIs to build APKs for
+            universalApk true //generate an additional APK that contains all the ABIs
         }
     }
     buildTypes {
