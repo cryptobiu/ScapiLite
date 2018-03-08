@@ -1,5 +1,0 @@
-/home/liork/AndroidStudioProjects/ScapiLite/app/CMakeFiles/edit_cache.dir
-/home/liork/AndroidStudioProjects/ScapiLite/app/CMakeFiles/rebuild_cache.dir
-/home/liork/AndroidStudioProjects/ScapiLite/app/src/main/cpp/CMakeFiles/edit_cache.dir
-/home/liork/AndroidStudioProjects/ScapiLite/app/src/main/cpp/CMakeFiles/rebuild_cache.dir
-/home/liork/AndroidStudioProjects/ScapiLite/app/src/main/cpp/CMakeFiles/primitives.dir
