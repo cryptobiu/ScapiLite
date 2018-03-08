@@ -17,7 +17,7 @@ buildUbuntu/
 
 # gitignore for ScapiLite APK
 
-ScapiLiteAPK/.gradle
+ScapiLiteAPK/.gradle/
 ScapiLiteAPK/build/
 ScapiLiteAPK/app/CMakeFiles
 ScapiLiteAPK/app/.externalNativeBuild
