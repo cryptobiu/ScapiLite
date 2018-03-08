@@ -28,8 +28,8 @@ ScapiLiteAPK/gradle-app.setting
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !ScapiLiteAPK/gradle-wrapper.jar
 
+#Project .idea
+ScapiLiteAPK/.idea
+
 # Cache of project
 ScapiLiteAPK/.gradletasknamecache
-
-# # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
-# gradle/wrapper/gradle-wrapper.properties
