@@ -28,14 +28,27 @@
 
 #pragma once
 
-#include <string>
 #include <map>
+#include <jni.h>
+#include <string>
+#include <sstream>
+#include <vector>
+#include <fstream>
+#include <iterator>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+#include <android/NeuralNetworks.h>
+
+using namespace std;
 
 class ConfigFile {
-	std::map<std::string, std::string> content_;
+	map<string, string> content_;
 
 public:
-	ConfigFile(std::string const& configFile);
-	std::string const& Value(std::string const& section, std::string const& entry) const;
+	ConfigFile(string const &configFile, JNIEnv *env, AAssetManager *assetManager);
+	string const& Value(string const& section, string const& entry) const;
+
+private:
+    vector<string> split(const string &str, const string &delim);
 };
 

@@ -1,5 +1,6 @@
 package crypto.cs.biu.scapilite;
 
+import android.content.res.AssetManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
@@ -10,7 +11,7 @@ public class MainActivity extends AppCompatActivity {
     static {
 //        System.loadLibrary("AndroidScapiLite");
         System.loadLibrary("primitives");
-        System.loadLibrary("gmp");
+//        System.loadLibrary("gmp");
     }
 
     @Override
@@ -20,7 +21,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Example of a call to a native method
         TextView tv = (TextView) findViewById(R.id.sample_text);
-        tv.setText(generatePRG());
+        AssetManager mgr = getResources().getAssets();
+        String res = protocolMain(mgr);
+        tv.setText(res);
     }
 
     /**
@@ -28,5 +31,6 @@ public class MainActivity extends AppCompatActivity {
      * which is packaged with this application.
      */
     public native String stringFromJNI();
-    public native String generatePRG();
+    public native String testLibs();
+    public native String protocolMain(AssetManager assetManager);
 }
