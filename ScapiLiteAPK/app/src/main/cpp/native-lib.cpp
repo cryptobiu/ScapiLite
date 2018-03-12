@@ -8,6 +8,8 @@
 #include <boost/date_time.hpp>
 #include <NTL/ZZ.h>
 #include "ConfigFile.h"
+#include "GF2_8LookupTable.h"
+#include "ProtocolParty.h"
 
 using namespace std;
 using namespace boost;
@@ -88,6 +90,27 @@ Java_crypto_cs_biu_scapilite_MainActivity_protocolMain(
         ports[i] = stoi(cf.Value("", portString));
         ips[i] = cf.Value("", ipString);
     }
+
+    char* argv[17];
+    argv[0] = "programName";
+    argv[1] = "Circuit";
+    argv[2] = "c1";
+    argv[3] = "field";
+    argv[4] = "f1";
+    argv[5] = "partyId";
+    argv[6] = "0";
+    argv[7] = "partiesNum";
+    argv[8] = "3";
+    argv[9] = "partiesFile";
+    argv[10] = "pf.txt";
+    argv[11] = "iteration";
+    argv[12] = "4";
+    argv[13] = "inputFile";
+    argv[14] = "if.txt";
+    argv[15] = "outputFile";
+    argv[16] = "of.txt";
+
+    ProtocolParty<GF2_8LookupTable> protocol(17, argv);
 
     return env->NewStringUTF(ips[0].c_str());
 }
