@@ -37,7 +37,6 @@
 #include <iterator>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
-#include <android/NeuralNetworks.h>
 
 using namespace std;
 
