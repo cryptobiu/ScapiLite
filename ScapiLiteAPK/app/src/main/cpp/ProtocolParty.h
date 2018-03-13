@@ -74,7 +74,7 @@ private:
     string s;
 
 public:
-    ProtocolParty(int argc, char* argv []);
+    ProtocolParty(int argc, char* argv [], JNIEnv *env, AAssetManager *assetManager);
     void split(const string &s, char delim, vector<string> &elems);
     vector<string> split(const string &s, char delim);
 
@@ -122,7 +122,7 @@ public:
     /**
      * This method reads text file and inits a vector of Inputs according to the file.
      */
-    void readMyInputs();
+    void readMyInputs(JNIEnv *env, AAssetManager *assetManager);
 
     /**
      * We describe the protocol initialization.
@@ -288,7 +288,9 @@ public:
 
 
 template <class FieldType>
-ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv []) : Protocol ("PerfectSecureMPC", argc, argv)
+ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
+                                        JNIEnv *env, AAssetManager *assetManager)
+        : Protocol ("PerfectSecureMPC", argc, argv)
 {
 
     string circuitFile = this->getParser().getValueByKey(arguments, "circuitFile");
@@ -321,10 +323,10 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv []) : Protocol ("Pe
 
     vector<string> subTaskNames{"Offline", "PreparationForInputPhase", "PreparationPhase", "inputPreparation", "Online",
                                 "InputAdjustment", "ComputationPhase", "OutputPhase"};
-    timer = new Measurement(*this, subTaskNames);
+    timer = new Measurement(*this, subTaskNames, env, assetManager);
 
     s = to_string(m_partyId);
-    circuit.readCircuit(circuitFile.c_str());
+    circuit.readCircuit(circuitFile.c_str(), env, assetManager);
     circuit.reArrangeCircuit();
     M = circuit.getNrOfGates();
     numOfInputGates = circuit.getNrOfInputGates();
@@ -332,22 +334,23 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv []) : Protocol ("Pe
     myInputs.resize(numOfInputGates);
     shareIndex = 0;//numOfInputGates;
 
-    parties = MPCCommunication::setCommunication(io_service, m_partyId, N, partiesFileName);
+//    parties = MPCCommunication::setCommunication(io_service, m_partyId, N, partiesFileName, env,
+//                                                 assetManager);
+//
+//    string tmp = "init times";
+//    //cout<<"before sending any data"<<endl;
+//    byte tmpBytes[20];
+//    for (int i=0; i<parties.size(); i++){
+//        if (parties[i]->getID() < m_partyId){
+//            parties[i]->getChannel()->write(tmp);
+//            parties[i]->getChannel()->read(tmpBytes, tmp.size());
+//        } else {
+//            parties[i]->getChannel()->read(tmpBytes, tmp.size());
+//            parties[i]->getChannel()->write(tmp);
+//        }
+//    }
 
-    string tmp = "init times";
-    //cout<<"before sending any data"<<endl;
-    byte tmpBytes[20];
-    for (int i=0; i<parties.size(); i++){
-        if (parties[i]->getID() < m_partyId){
-            parties[i]->getChannel()->write(tmp);
-            parties[i]->getChannel()->read(tmpBytes, tmp.size());
-        } else {
-            parties[i]->getChannel()->read(tmpBytes, tmp.size());
-            parties[i]->getChannel()->write(tmp);
-        }
-    }
-
-    readMyInputs();
+    readMyInputs(env, assetManager);
 
     auto t1 = high_resolution_clock::now();
     initializationPhase(/*matrix_him, matrix_vand, m*/);
@@ -581,21 +584,29 @@ bool ProtocolParty<FieldType>::broadcast(int party_id, vector<byte> myMessage, v
 }
 
 template <class FieldType>
-void ProtocolParty<FieldType>::readMyInputs()
+void ProtocolParty<FieldType>::readMyInputs(JNIEnv *env, AAssetManager *assetManager)
 {
+    AAsset* file = AAssetManager_open(assetManager, inputsFile.c_str(), AASSET_MODE_BUFFER);
+    off_t fileLength = AAsset_getLength(file);
+    char* fileContent = new char[fileLength+1];
 
-    //cout<<"inputs file" << inputsFile<<endl;
-    ifstream myfile;
+    // Read your file
+    AAsset_read(file, fileContent, (size_t)fileLength);
+
+    // For safety you can add a 0 terminating character at the end of your file ...
+    fileContent[fileLength] = '\0';
+
+    stringstream data(fileContent);
     int input;
     int i =0;
-    myfile.open(inputsFile);
-    do {
-        myfile >> input;
+
+    do
+    {
+        data >> input;
         myInputs[i] = input;
         i++;
-    } while(!(myfile.eof()));
-    myfile.close();
-    //cout<<"after read inputs" <<endl;
+    }
+    while(!(data.eof()));
 
 }
 

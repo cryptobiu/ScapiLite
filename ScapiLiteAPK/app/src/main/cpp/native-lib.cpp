@@ -75,43 +75,29 @@ Java_crypto_cs_biu_scapilite_MainActivity_protocolMain(
         jobject assetManager)
 {
     AAssetManager *assMgr = AAssetManager_fromJava(env, assetManager);
-    ConfigFile cf("parties.conf", env, assMgr);
 
-    string portString, ipString;
-    vector<int> ports(100);
-    vector<string> ips(100);
-
-    int counter = 0;
-    for (int i = 0; i < 100; i++) {
-        portString = "party_" + to_string(i) + "_port";
-        ipString = "party_" + to_string(i) + "_ip";
-
-        //get partys IPs and ports data
-        ports[i] = stoi(cf.Value("", portString));
-        ips[i] = cf.Value("", ipString);
-    }
 
     char* argv[17];
-    argv[0] = "programName";
-    argv[1] = "Circuit";
-    argv[2] = "c1";
-    argv[3] = "field";
-    argv[4] = "f1";
-    argv[5] = "partyId";
-    argv[6] = "0";
-    argv[7] = "partiesNum";
-    argv[8] = "3";
-    argv[9] = "partiesFile";
-    argv[10] = "pf.txt";
-    argv[11] = "iteration";
-    argv[12] = "4";
+    argv[0] = "PerfectSecureMPC";
+    argv[1] = "circuitFile";
+    argv[2] = "1000000G_1000000MG_333In_50Out_20D_OutputOne3P.txt";
+    argv[3] = "fieldType";
+    argv[4] = "ZpMersenne";
+    argv[5] = "internalIterationsNumber";
+    argv[6] = "5";
+    argv[7] = "partyID";
+    argv[8] = "0";
+    argv[9] = "partiesNumber";
+    argv[10] = "3";
+    argv[11] = "partiesFile";
+    argv[12] = "parties.conf";
     argv[13] = "inputFile";
-    argv[14] = "if.txt";
+    argv[14] = "inputs333.txt";
     argv[15] = "outputFile";
-    argv[16] = "of.txt";
+    argv[16] = "output.txt";
 
-    ProtocolParty<GF2_8LookupTable> protocol(17, argv);
+    ProtocolParty<GF2_8LookupTable> protocol(17, argv, env, assMgr);
 
-    return env->NewStringUTF(ips[0].c_str());
+    return env->NewStringUTF("");
 }
 
