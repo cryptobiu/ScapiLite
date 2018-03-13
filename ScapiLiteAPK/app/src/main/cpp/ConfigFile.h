@@ -35,6 +35,7 @@
 #include <vector>
 #include <fstream>
 #include <iterator>
+#include <sstream>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 
@@ -46,8 +47,5 @@ class ConfigFile {
 public:
 	ConfigFile(string const &configFile, JNIEnv *env, AAssetManager *assetManager);
 	string const& Value(string const& section, string const& entry) const;
-
-private:
-    vector<string> split(const string &str, const string &delim);
 };
 

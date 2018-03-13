@@ -7,6 +7,9 @@
 
 #include "TGate.h"
 #include <vector>
+#include <sstream>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
 
 /**
 * A software representation of the structure of an arithmetic circuit.
@@ -46,7 +49,7 @@ public:
     * This includes creating the gates and other information about the parties involved.
     *
     */
-    void readCircuit(const char* fileName);
+    void readCircuit(const char* fileName, JNIEnv *env, AAssetManager *assetManager);
 
     //get functions
     int getNrOfMultiplicationGates() { return nrOfMultiplicationGates; }

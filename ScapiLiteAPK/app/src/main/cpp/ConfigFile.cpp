@@ -4,23 +4,6 @@
 
 #include "ConfigFile.h"
 
-vector<string> ConfigFile::split(const string &str, const string &delim)
-{
-    const auto delim_pos = str.find(delim);
-
-    if (delim_pos == string::npos)
-        return {str};
-
-    vector<string> ret{str.substr(0, delim_pos)};
-    auto tail = split(str.substr(delim_pos + delim.size(), string::npos), delim);
-
-    ret.insert(ret.end(), tail.begin(), tail.end());
-
-    return ret;
-}
-
-
-
 string trim(string const& source, char const* delims = " \t\r\n") {
     string result(source);
     string::size_type index = result.find_last_not_of(delims);
@@ -37,26 +20,24 @@ string trim(string const& source, char const* delims = " \t\r\n") {
 
 ConfigFile::ConfigFile(string const &configFile, JNIEnv *env, AAssetManager *assetManager) {
 
-//    AAssetManager* mgr =  AAssetManager_fromJava(env, assetManager);
     AAsset* file = AAssetManager_open(assetManager, configFile.c_str(), AASSET_MODE_BUFFER);
     size_t fileLength = AAsset_getLength(file);
     char* fileContent = new char[fileLength+1];
 
-// Read your file
+    // Read your file
     AAsset_read(file, fileContent, fileLength);
-// For safety you can add a 0 terminating character at the end of your file ...
+    // For safety you can add a 0 terminating character at the end of your file ...
     fileContent[fileLength] = '\0';
     string dataBeforeParsing = fileContent;
-    vector<string> data = split(dataBeforeParsing, "\n");
+    stringstream data(fileContent);
 
     string line;
     string name;
     string value;
     string inSection;
     int posEqual;
-    for (int idx = 0; idx < data.size(); ++idx)
+    while (std::getline(data, line))
     {
-        line = data[idx];
         if (!line.length()) continue;
 
         if (line[0] == '#') continue;
