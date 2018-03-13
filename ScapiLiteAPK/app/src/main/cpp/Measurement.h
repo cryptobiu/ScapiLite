@@ -22,6 +22,8 @@
 #include "ConfigFile.h"
 #include "json.h"
 #include "Protocol.h"
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
 
 
 using namespace std;
@@ -30,8 +32,8 @@ using json = nlohmann::json;
 
 class Measurement {
 public:
-    Measurement(Protocol &protocol);
-    Measurement(Protocol &protocol, vector<string> names);
+    Measurement(Protocol &protocol, JNIEnv *env, AAssetManager *assetManager);
+    Measurement(Protocol &protocol, vector<string> names, JNIEnv *env, AAssetManager *assetManager);
     void setTaskNames(vector<string> & names);
     ~Measurement();
     void startSubTask(string taskName, int currentIterationNum);
@@ -45,10 +47,10 @@ private:
         return string(getcwd(buff,255));
     }
 
-    void init(Protocol &protocol);
+    void init(Protocol &protocol, JNIEnv *env, AAssetManager *assetManager);
     void init(vector <string> names);
     int getTaskIdx(string name); // return the index of given task name
-    void setCommInterface(string partiesFile);
+    void setCommInterface(string partiesFile, JNIEnv *env, AAssetManager *assetManager);
 
     tuple<unsigned long int, unsigned long int> commData(const char * nic_);
     void analyze(string type);

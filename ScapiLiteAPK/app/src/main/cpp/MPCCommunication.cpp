@@ -4,15 +4,15 @@
 
 #include "MPCCommunication.h"
 
-vector<shared_ptr<ProtocolPartyData>> MPCCommunication::setCommunication(io_service & io_service,
-                                                                         int id, int numParties,
-                                                                         string configFile){
+vector<shared_ptr<ProtocolPartyData>> MPCCommunication::setCommunication
+        (io_service & io_service, int id, int numParties, string configFile,
+         JNIEnv *env, AAssetManager *assetManager){
     cout<<"num parties = "<<numParties<<endl;
     cout<<"my id = "<<id<<endl;
     vector<shared_ptr<ProtocolPartyData>> parties(numParties - 1);
 
     //open file
-    ConfigFile cf(configFile, nullptr, nullptr);
+    ConfigFile cf(configFile, env, assetManager);
 
     string portString, ipString;
     vector<int> ports(numParties);

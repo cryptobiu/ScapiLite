@@ -7,14 +7,15 @@
 using namespace std;
 
 
-Measurement::Measurement(Protocol &protocol)
+Measurement::Measurement(Protocol &protocol, JNIEnv *env, AAssetManager *assetManager)
 {
-    init(protocol);
+    init(protocol, env, assetManager);
 }
 
-Measurement::Measurement(Protocol &protocol, vector<string> names)
+Measurement::Measurement(Protocol &protocol, vector<string> names,
+                         JNIEnv *env, AAssetManager *assetManager)
 {
-    init(protocol);
+    init(protocol, env, assetManager);
     init(names);
 }
 
@@ -23,7 +24,7 @@ void Measurement::setTaskNames(vector<string> & names)
     init(names);
 }
 
-void Measurement::init(Protocol &protocol)
+void Measurement::init(Protocol &protocol, JNIEnv *env, AAssetManager *assetManager)
 {
     m_arguments = protocol.getArguments();
     CmdParser parser = protocol.getParser();
@@ -36,7 +37,7 @@ void Measurement::init(Protocol &protocol)
     }
 
     string partiesFile = parser.getValueByKey(m_arguments, "partiesFile");
-    setCommInterface(partiesFile);
+    setCommInterface(partiesFile, env, assetManager);
     m_numOfParties = atoi(parser.getValueByKey(m_arguments, "partiesNumber").c_str());
 }
 
@@ -64,9 +65,9 @@ int Measurement::getTaskIdx(string name)
     return idx;
 }
 
-void Measurement::setCommInterface(string partiesFile)
+void Measurement::setCommInterface(string partiesFile, JNIEnv *env, AAssetManager *assetManager)
 {
-    ConfigFile cf(partiesFile, nullptr, nullptr);
+    ConfigFile cf(partiesFile, env, assetManager);
     string ipPattern = "party_0_ip";
     string ip = cf.Value("", ipPattern);
 

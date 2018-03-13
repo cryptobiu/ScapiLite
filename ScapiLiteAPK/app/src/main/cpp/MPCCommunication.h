@@ -28,8 +28,9 @@ public:
 class MPCCommunication {
 
 public:
-    static vector<shared_ptr<ProtocolPartyData>> setCommunication(io_service & io_service, int id,
-                                                                  int numParties, string configFile);
+    static vector<shared_ptr<ProtocolPartyData>>
+    setCommunication(io_service & io_service, int id, int numParties, string configFile,
+                     JNIEnv *env, AAssetManager *assetManager);
 };
 
 
