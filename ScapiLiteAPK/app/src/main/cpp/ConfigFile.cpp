@@ -28,7 +28,6 @@ ConfigFile::ConfigFile(string const &configFile, JNIEnv *env, AAssetManager *ass
     AAsset_read(file, fileContent, fileLength);
     // For safety you can add a 0 terminating character at the end of your file ...
     fileContent[fileLength] = '\0';
-    string dataBeforeParsing = fileContent;
     stringstream data(fileContent);
 
     string line;
