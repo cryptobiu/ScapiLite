@@ -7,6 +7,9 @@
 #include <vector>
 #include <memory>
 
+#include <android/log.h>
+#define APPNAME "ScapiLite"
+
 typedef unsigned char byte;
 
 using namespace std;

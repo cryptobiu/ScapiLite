@@ -334,21 +334,21 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
     myInputs.resize(numOfInputGates);
     shareIndex = 0;//numOfInputGates;
 
-//    parties = MPCCommunication::setCommunication(io_service, m_partyId, N, partiesFileName, env,
-//                                                 assetManager);
-//
-//    string tmp = "init times";
-//    //cout<<"before sending any data"<<endl;
-//    byte tmpBytes[20];
-//    for (int i=0; i<parties.size(); i++){
-//        if (parties[i]->getID() < m_partyId){
-//            parties[i]->getChannel()->write(tmp);
-//            parties[i]->getChannel()->read(tmpBytes, tmp.size());
-//        } else {
-//            parties[i]->getChannel()->read(tmpBytes, tmp.size());
-//            parties[i]->getChannel()->write(tmp);
-//        }
-//    }
+    parties = MPCCommunication::setCommunication(io_service, m_partyId, N, partiesFileName, env,
+                                                 assetManager);
+
+    string tmp = "init times";
+    //cout<<"before sending any data"<<endl;
+    byte tmpBytes[20];
+    for (int i=0; i<parties.size(); i++){
+        if (parties[i]->getID() < m_partyId){
+            parties[i]->getChannel()->write(tmp);
+            parties[i]->getChannel()->read(tmpBytes, tmp.size());
+        } else {
+            parties[i]->getChannel()->read(tmpBytes, tmp.size());
+            parties[i]->getChannel()->write(tmp);
+        }
+    }
 
     readMyInputs(env, assetManager);
 

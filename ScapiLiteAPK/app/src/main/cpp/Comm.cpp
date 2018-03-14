@@ -60,11 +60,13 @@ void CommPartyTCPSynced::join(int sleepBetweenAttempts, int timeout) {
         {
             if (totalSleep > timeout)
             {
-                cerr << "Failed to connect after timeout, aborting!";
+                __android_log_print(ANDROID_LOG_ERROR, APPNAME,
+                                    "Failed to connect after timeout, aborting!");
+                __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "%s", ex.what());
                 throw ex;
             }
-            cout << "Failed to connect. sleeping for " << sleepBetweenAttempts <<
-                 " milliseconds, " << ex.what() << endl;
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Failed to connect. sleeping for %d "
+                    "milliseconds, %s", (sleepBetweenAttempts, ex.what()));
             this_thread::sleep_for(chrono::milliseconds(sleepBetweenAttempts));
             totalSleep += sleepBetweenAttempts;
         }

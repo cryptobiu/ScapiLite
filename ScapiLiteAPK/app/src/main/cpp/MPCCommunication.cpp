@@ -7,8 +7,10 @@
 vector<shared_ptr<ProtocolPartyData>> MPCCommunication::setCommunication
         (io_service & io_service, int id, int numParties, string configFile,
          JNIEnv *env, AAssetManager *assetManager){
-    cout<<"num parties = "<<numParties<<endl;
-    cout<<"my id = "<<id<<endl;
+
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Num of parties: %d", numParties);
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "My id: %d", id);
+
     vector<shared_ptr<ProtocolPartyData>> parties(numParties - 1);
 
     //open file
@@ -34,26 +36,27 @@ vector<shared_ptr<ProtocolPartyData>> MPCCommunication::setCommunication
         if (i < id) {// This party will be the receiver in the protocol
 
             me = SocketPartyData(boost_ip::address::from_string(ips[id]), ports[id] + i);
-            cout<<"my port = "<<ports[id] + i<<endl;
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "my port %d", ports[id] + 1);
             other = SocketPartyData(boost_ip::address::from_string(ips[i]), ports[i] + id - 1);
-            cout<<"other port = "<<ports[i] + id - 1<<endl;
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "other port %d", ports[id] - 1);
 
             shared_ptr<CommParty> channel = make_shared<CommPartyTCPSynced>(io_service, me, other);
             // connect to party one
             channel->join(500, 5000);
-            cout<<"channel established"<<endl;
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "channel established");
 
             parties[counter++] = make_shared<ProtocolPartyData>(i, channel);
-        } else if (i>id) {// This party will be the sender in the protocol
+        }
+        else if (i>id) {// This party will be the sender in the protocol
             me = SocketPartyData(boost_ip::address::from_string(ips[id]), ports[id] + i - 1);
-            cout<<"my port = "<<ports[id] + i - 1<<endl;
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "my port %d", ports[id] + 1);
             other = SocketPartyData(boost_ip::address::from_string(ips[i]), ports[i] + id);
-            cout<<"other port = "<< ports[i] + id<<endl;
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "other port %d", ports[id] - 1);
 
             shared_ptr<CommParty> channel = make_shared<CommPartyTCPSynced>(io_service, me, other);
             // connect to party one
             channel->join(500, 5000);
-            cout<<"channel established"<<endl;
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "channel established");
 
             parties[counter++] = make_shared<ProtocolPartyData>(i, channel);
         }
