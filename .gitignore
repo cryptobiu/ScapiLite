@@ -9,6 +9,10 @@ Makefile
 CMakeCache.txt
 CMakeFiles/*
 cmake_install.cmake
+src/primitives/Makefile
+src/primitives/CMakeCache.txt
+src/primitives/CMakeFiles/*
+src/primitives/cmake_install.cmake
 *.so
 *.a
 buildAndroid/
@@ -22,6 +26,7 @@ ScapiLiteAPK/build/
 ScapiLiteAPK/app/CMakeFiles
 ScapiLiteAPK/app/.externalNativeBuild/*
 ScapiLiteAPK/app/app.iml
+ScapiLiteAPK/app/src/main/assets/
 
 # Ignore Gradle GUI config
 ScapiLiteAPK/gradle-app.setting
