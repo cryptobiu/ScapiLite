@@ -26,7 +26,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g")
 
 add_library(primitives SHARED native-lib.cpp Prg.cpp aes.cpp Common.cpp ArithmeticCircuit.cpp
 Comm.cpp MPCCommunication.cpp Protocol.cpp ConfigFile.cpp Measurement.cpp Mersenne.h Matrix.h
-TemplateField.cpp GF2_8LookupTable.cpp ProtocolParty.h)
+TemplateField.cpp GF2_8LookupTable.cpp ProtocolParty.h CommBF.cpp MPCCommunicationBF.cpp)
 
 target_include_directories(primitives PRIVATE
                            ${distribution_DIR}/GMP/include
