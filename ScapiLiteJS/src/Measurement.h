@@ -22,9 +22,6 @@
 #include "ConfigFile.h"
 #include "json.h"
 #include "Protocol.h"
-#include <android/asset_manager.h>
-#include <android/asset_manager_jni.h>
-
 
 using namespace std;
 using namespace std::chrono;

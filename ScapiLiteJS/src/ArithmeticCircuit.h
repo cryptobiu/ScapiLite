@@ -1,15 +1,8 @@
-//
-// Created by liork on 08/03/18.
-//
-
-#ifndef SCAPILITEAPK_ARITHMETICCIRCUIT_H
-#define SCAPILITEAPK_ARITHMETICCIRCUIT_H
+#ifndef CIRCUIT_H_
+#define CIRCUIT_H_
 
 #include "TGate.h"
 #include <vector>
-#include <sstream>
-#include <android/asset_manager.h>
-#include <android/asset_manager_jni.h>
 
 /**
 * A software representation of the structure of an arithmetic circuit.
@@ -22,6 +15,7 @@
 */
 
 using namespace std;
+
 
 class ArithmeticCircuit
 {
@@ -49,7 +43,7 @@ public:
     * This includes creating the gates and other information about the parties involved.
     *
     */
-    void readCircuit(const char* fileName, JNIEnv *env, AAssetManager *assetManager);
+    void readCircuit(const char* fileName);
 
     //get functions
     int getNrOfMultiplicationGates() { return nrOfMultiplicationGates; }
@@ -81,5 +75,4 @@ public:
 
 };
 
-
-#endif //SCAPILITEAPK_ARITHMETICCIRCUIT_H
+#endif /* CIRCUIT_H_ */

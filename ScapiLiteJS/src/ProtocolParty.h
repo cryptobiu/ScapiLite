@@ -2,26 +2,53 @@
 #define PROTOCOL_H_
 
 #include <stdlib.h>
-#include <libscapi/include/primitives/Matrix.hpp>
-#include <libscapi/include/circuits/ArithmeticCircuit.hpp>
+#include "Matrix.h"
+#include "ArithmeticCircuit.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
 #include <chrono>
 #include "TemplateField.h"
-#include <libscapi/include/comm/MPCCommunication.hpp>
-#include <libscapi/include/infra/Common.hpp>
-#include <libscapi/include/infra/Measurement.hpp>
+#include "MPCCommunicationBF.h"
+#include "Common.h"
+//#include "Measurement.h"
 #include <thread>
-#include <libscapi/include/cryptoInfra/Protocol.hpp>
+#include "Protocol.h"
+#include "SecurityLevel.h"
 
 #define flag_print false
 #define flag_print_timings true
 #define flag_print_output false
 
-
 using namespace std;
 using namespace std::chrono;
+
+typedef enum {
+  UNINITIAZLIED,
+  RUN_OFFLINE_RANDOM_SHARING, // x2
+  RUN_OFFLINE_PREP_PHASE, // x2
+  RUN_OFFLINE_INPUT_PREP,
+  RUN_ONLINE,
+  DONE
+} state_t;
+
+typedef enum {
+  PHASE0,
+  PHASE1,
+  PHASE2,
+  PHASE3,
+  PHASE4,
+  PHASE5
+} internal_state_t;
+
+bool should_read = false;
+int read_from_index = 0;
+
+high_resolution_clock::time_point tstart_program;
+high_resolution_clock::time_point tstart_state;
+high_resolution_clock::time_point tstart_internal_state;
+
+int iteration_state = 0;
 
 template <class FieldType>
 class ProtocolParty : public Protocol, public HonestMajority, public MultiParty {
@@ -35,7 +62,6 @@ private:
     int times; //number of times to run the run function
     int iteration; //number of the current iteration
 
-    Measurement* timer;
     int N, M, T, m_partyId;
     int numOfInputGates, numOfOutputGates;
     string inputsFile, outputFile;
@@ -50,8 +76,7 @@ private:
     HIM<FieldType> m;
 
     //Communication* comm;
-    boost::asio::io_service io_service;
-    vector<shared_ptr<ProtocolPartyData>>  parties;
+    vector<shared_ptr<ProtocolPartyDataBF>>  parties;
 
     ArithmeticCircuit circuit;
     vector<FieldType> gateValueArr; // the value of the gate (for my input and output gates)
@@ -67,18 +92,24 @@ private:
     vector<int> myInputs;
     string s;
 
+    state_t state = UNINITIAZLIED;
+    internal_state_t internal_state = PHASE0;
+
+    vector<vector<byte>> sendBufsBytes;
+    vector<vector<byte>> recBufsBytes;
+
 public:
     ProtocolParty(int argc, char* argv []);
     void split(const string &s, char delim, vector<string> &elems);
     vector<string> split(const string &s, char delim);
 
 
-    void roundFunctionSync(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int round);
+    void roundFunctionASync(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int round);
     void exchangeData(vector<vector<byte>> &sendBufs,vector<vector<byte>> &recBufs, int first, int last);
     void roundFunctionSyncBroadcast(vector<byte> &message, vector<vector<byte>> &recBufs);
     void recData(vector<byte> &message, vector<vector<byte>> &recBufs, int first, int last);
 
-
+    int b = 10;
 
     /**
      * This method runs the protocol:
@@ -87,7 +118,7 @@ public:
      * Computation Phase
      * Output Phase
      */
-    void run() override;
+    bool run() override;
 
     bool hasOffline() {
         return true;
@@ -315,7 +346,6 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv []) : Protocol ("Pe
 
     vector<string> subTaskNames{"Offline", "PreparationForInputPhase", "PreparationPhase", "inputPreparation", "Online",
                                 "InputAdjustment", "ComputationPhase", "OutputPhase"};
-    timer = new Measurement(*this, subTaskNames);
 
     s = to_string(m_partyId);
     circuit.readCircuit(circuitFile.c_str());
@@ -326,20 +356,20 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv []) : Protocol ("Pe
     myInputs.resize(numOfInputGates);
     shareIndex = 0;//numOfInputGates;
 
-    parties = MPCCommunication::setCommunication(io_service, m_partyId, N, partiesFileName);
+    parties = MPCCommunicationBF::setCommunication(m_partyId, N, partiesFileName);
 
-    string tmp = "init times";
-    //cout<<"before sending any data"<<endl;
-    byte tmpBytes[20];
-    for (int i=0; i<parties.size(); i++){
-        if (parties[i]->getID() < m_partyId){
-            parties[i]->getChannel()->write(tmp);
-            parties[i]->getChannel()->read(tmpBytes, tmp.size());
-        } else {
-            parties[i]->getChannel()->read(tmpBytes, tmp.size());
-            parties[i]->getChannel()->write(tmp);
-        }
-    }
+//    string tmp = "init times";
+//    //cout<<"before sending any data"<<endl;
+//    byte tmpBytes[20];
+//    for (int i=0; i<parties.size(); i++){
+//        if (parties[i]->getID() < m_partyId){
+//            parties[i]->getChannel()->write(tmp);
+//            parties[i]->getChannel()->read(tmpBytes, tmp.size());
+//        } else {
+//            parties[i]->getChannel()->read(tmpBytes, tmp.size());
+//            parties[i]->getChannel()->write(tmp);
+//        }
+//    }
 
     readMyInputs();
 
@@ -352,6 +382,9 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv []) : Protocol ("Pe
     if(flag_print_timings) {
         cout << "time in milliseconds initializationPhase: " << duration << endl;
     }
+
+    sendBufsBytes = vector<vector<byte>>(N);
+	recBufsBytes = vector<vector<byte>>(N);
 }
 
 template <class FieldType>
@@ -530,7 +563,7 @@ bool ProtocolParty<FieldType>::broadcast(int party_id, vector<byte> myMessage, v
     }
 
 
-    roundFunctionSync(sendBufsBytes, recBufs2Bytes,3);
+    roundFunctionASync(sendBufsBytes, recBufs2Bytes,3);
     //comm->roundfunctionI(sendBufsBytes, recBufs2Bytes,3);
 
     for(int i=0; i < N; i++)
@@ -594,20 +627,101 @@ void ProtocolParty<FieldType>::readMyInputs()
 }
 
 template <class FieldType>
-void ProtocolParty<FieldType>::run() {
-    for (iteration=0; iteration<times; iteration++){
-        auto t1start = high_resolution_clock::now();
-        timer->startSubTask("Offline", iteration);
-        runOffline();
-        timer->endSubTask("Offline", iteration);
-        timer->startSubTask("Online", iteration);
-        runOnline();
-        timer->endSubTask("Online", iteration);
-        auto t2end = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(t2end-t1start).count();
+bool ProtocolParty<FieldType>::run() {
+	bool ret_val = true;
 
-        cout << "time in milliseconds for protocol: " << duration << endl;
-    }
+//	cout<<"BLAAA run; should_read: "<<should_read<<", state: "<<state<<", internal_state: "<<internal_state<<endl;
+
+	if (should_read) {
+		for (int i = read_from_index; i < parties.size(); i++) {
+			std::shared_ptr<CommPartyBF> channel = parties[i]->getChannel();
+
+			//receive shares from the other party and set them in the shares array
+			size_t read_bytes = channel->read(recBufsBytes[parties[i]->getID()].data(), recBufsBytes[parties[i]->getID()].size());
+
+			if (read_bytes != recBufsBytes[parties[i]->getID()].size()) {
+				if (read_bytes != 0) {
+					// todo: we have to handle this case: partial data
+					cout<<"read " << read_bytes<< " bytes instead of "<<recBufsBytes[parties[i]->getID()].size()<<" - For now it is error. should be handled"<<endl;
+					ret_val = false;
+				}
+
+				goto exit;
+			}
+
+			cout<<"Party ID: "<<parties[i]->getID()<<"; read "<<read_bytes<<"/"<<recBufsBytes[parties[i]->getID()].size()<<" bytes"<<endl;
+
+			read_from_index++;
+		}
+		should_read = false;
+		internal_state = (internal_state_t)(internal_state + 1);
+	}
+
+	switch (state) {
+		case UNINITIAZLIED: {
+		    for (int i = 0; i < parties.size(); i++) {
+		    	std::shared_ptr<CommPartyBF> channel = parties[i]->getChannel();
+
+		    	bool isConnected;
+		    	if (!channel->checkConnectivity(&isConnected)) {
+		    		ret_val = false;
+		    		goto exit;
+		    	}
+
+		    	if (isConnected) {
+		    		continue;
+		    	}
+
+		    	goto exit;
+		    }
+
+		    tstart_program = high_resolution_clock::now();
+		    cout<<"All channels are established"<<endl;
+
+		    state = (state_t)(state + 1);
+			break;
+		}
+
+		case RUN_OFFLINE_RANDOM_SHARING:
+		case RUN_OFFLINE_PREP_PHASE:
+		case RUN_OFFLINE_INPUT_PREP: {
+			runOffline();
+			break;
+		}
+
+		case RUN_ONLINE: {
+			runOnline();
+			break;
+		}
+
+		case DONE: {
+			auto t2end = high_resolution_clock::now();
+			auto duration = duration_cast<milliseconds>(t2end-tstart_program).count();
+
+			cout << "time in milliseconds for protocol: " << duration << endl;
+
+			state = (state_t)(state + 1);
+			break;
+		}
+
+		default: {
+			ret_val = false;
+			goto exit;
+		}
+	}
+
+//    for (iteration=0; iteration < times; iteration++){
+//        auto t1start = high_resolution_clock::now();
+//        runOffline();
+//        runOnline();
+//        auto t2end = high_resolution_clock::now();
+//        auto duration = duration_cast<milliseconds>(t2end-t1start).count();
+//
+//        cout << "time in milliseconds for protocol: " << duration << endl;
+//    }
+
+exit:
+	return ret_val;
 }
 
 /**
@@ -616,62 +730,138 @@ void ProtocolParty<FieldType>::run() {
  */
 template <class FieldType>
 void ProtocolParty<FieldType>::runOffline() {
-    shareIndex = 0;//numOfInputGates;
+	switch (state) {
+		case RUN_OFFLINE_RANDOM_SHARING: {
+			if (internal_state == PHASE0) {
+				cout << "==============  RandomSharingForInputs  ==============" << '\n';
+				tstart_state = high_resolution_clock::now();
+			}
 
-    auto t1 = high_resolution_clock::now();
-    timer->startSubTask("PreparationForInputPhase", iteration);
-    if(RandomSharingForInputs() == false) {
-        if(flag_print) {
-            cout << "cheating!!!" << '\n';}
-        return;
-    }
-    else {
-        if(flag_print) {
-            cout << "no cheating!!!" << '\n' << "finish preparationForInputs Phase" << '\n';}
-    }
+			bool ret = RandomSharingForInputs();
 
-    timer->endSubTask("PreparationForInputPhase", iteration);
-    auto t2 = high_resolution_clock::now();
-    auto duration = duration_cast<milliseconds>(t2-t1).count();
-    if(flag_print_timings) {
-        cout << "time in milliseconds preparationForInputsPhase: " << duration << endl;
-    }
-    t1 = high_resolution_clock::now();
-    timer->startSubTask("PreparationPhase", iteration);
-    if(preparationPhase() == false) {
-        if(flag_print) {
-            cout << "cheating!!!" << '\n';}
-        return;
-    }
-    else {
-        if(flag_print) {
-            cout << "no cheating!!!" << '\n' << "finish Preparation Phase" << '\n';}
-    }
-    timer->endSubTask("PreparationPhase", iteration);
-    t2 = high_resolution_clock::now();
-    duration = duration_cast<milliseconds>(t2-t1).count();
-    if(flag_print_timings) {
-        cout << "time in milliseconds preparationPhase: " << duration << endl;
-    }
+			if (internal_state == PHASE2) {
+				// last phase for this state
 
-    t1 = high_resolution_clock::now();
-    timer->startSubTask("inputPreparation", iteration);
-    if(inputPreparation() == false) {
-        cout << "cheating!!!" << '\n';
-        if(flag_print) {
-            cout << "cheating!!!" << '\n';}
-        return;
-    }
-    else {
-        if(flag_print) {
-            cout << "no cheating!!!" << '\n' << "finish Input Preparation" << '\n';}
-    }
-    timer->endSubTask("inputPreparation", iteration);
-    t2 = high_resolution_clock::now();
-    duration = duration_cast<milliseconds>(t2-t1).count();
-    if(flag_print_timings) {
-        cout << "time in milliseconds inputPreparation: " << duration << endl;
-    }
+				if(ret == false) {
+//					if(flag_print) {
+						cout << "cheating!!!" << endl;
+//					}
+					internal_state = (internal_state_t)(internal_state + 1);
+					return;
+				}
+
+//				if(flag_print) {
+					cout << "no cheating!!!" << '\n' << "finish RandomSharingForInputs Phase" << '\n';
+//				}
+
+				high_resolution_clock::time_point t2 = high_resolution_clock::now();
+				auto duration = duration_cast<milliseconds>( t2 - tstart_state ).count();
+				cout << "RandomSharingForInputs took: " <<duration<<" ms"<<endl;
+
+				// cleanings
+			    for (int i=0; i<N; i++) {
+			        recBufsBytes[i].clear();
+			    }
+			    for (int i=0; i<N; i++) {
+			    	sendBufsBytes[i].clear();
+			    }
+
+				state = (state_t)(state + 1);
+				internal_state = PHASE0;
+			    cout << "===================================" << '\n';
+			}
+			break;
+		}
+
+		case RUN_OFFLINE_PREP_PHASE: {
+			if (internal_state == PHASE0) {
+				cout << "==============  preparationPhase  ==============" << '\n';
+				tstart_state = high_resolution_clock::now();
+			}
+
+			bool ret = preparationPhase();
+
+			if (internal_state == PHASE2) {
+				// last phase for this state
+
+				high_resolution_clock::time_point t2 = high_resolution_clock::now();
+				auto duration = duration_cast<milliseconds>( t2 - tstart_state ).count();
+				cout << "preparationPhase took: " <<duration<<" ms"<<endl;
+
+			    if(ret == false) {
+//			        if (flag_print) {
+			            cout << "cheating!!!" << '\n';
+//			        }
+			        internal_state = (internal_state_t)(internal_state + 1);
+			        return;
+			    }
+
+//				if(flag_print) {
+					cout << "no cheating!!!" << '\n' << "finish Preparation Phase" << '\n';
+//				}
+
+				// cleanings
+			    for (int i=0; i<N; i++) {
+			        recBufsBytes[i].clear();
+			    }
+			    for (int i=0; i<N; i++) {
+			    	sendBufsBytes[i].clear();
+			    }
+
+				state = (state_t)(state + 1);
+				internal_state = PHASE0;
+				cout << "===================================" << '\n';
+			}
+			break;
+		}
+
+		case RUN_OFFLINE_INPUT_PREP: {
+			if (internal_state == PHASE0) {
+				cout << "==============  inputPreparation  ==============" << '\n';
+				tstart_state = high_resolution_clock::now();
+			}
+
+			bool ret = inputPreparation();
+
+			if (internal_state == PHASE1) {
+				// last phase for this state
+
+				high_resolution_clock::time_point t2 = high_resolution_clock::now();
+				auto duration = duration_cast<milliseconds>( t2 - tstart_state ).count();
+				cout << "inputPreparation took: " <<duration<<" ms"<<endl;
+
+			    if(ret == false) {
+//			        if (flag_print) {
+			            cout << "cheating!!!" << '\n';
+//			        }
+			        internal_state = (internal_state_t)(internal_state + 1);
+			        return;
+			    }
+
+//				if(flag_print) {
+					cout << "no cheating!!!" << '\n' << "finish inputPreparation Phase" << '\n';
+//				}
+
+				// cleanings
+			    for (int i=0; i<N; i++) {
+			        recBufsBytes[i].clear();
+			    }
+			    for (int i=0; i<N; i++) {
+			    	sendBufsBytes[i].clear();
+			    }
+
+				state = (state_t)(state + 1);
+				internal_state = PHASE0;
+				cout << "===================================" << '\n';
+			}
+			break;
+		}
+
+		default: {
+			cout << "ERROR" << '\n';
+			return;
+		}
+	}
 }
 
 /**
@@ -686,9 +876,7 @@ void ProtocolParty<FieldType>::runOnline() {
     string sss = "";
 
     auto t1 = high_resolution_clock::now();
-    timer->startSubTask("InputAdjustment", iteration);
     inputAdjustment(sss/*, matrix_him*/);
-    timer->endSubTask("InputAdjustment", iteration);
     auto t2 = high_resolution_clock::now();
 
     auto duration = duration_cast<milliseconds>(t2-t1).count();
@@ -700,9 +888,7 @@ void ProtocolParty<FieldType>::runOnline() {
         cout << "after Input Adjustment " << '\n'; }
 
     t1 = high_resolution_clock::now();
-    timer->startSubTask("ComputationPhase", iteration);
     computationPhase(m);
-    timer->endSubTask("ComputationPhase", iteration);
     t2 = high_resolution_clock::now();
 
     duration = duration_cast<milliseconds>(t2-t1).count();
@@ -712,9 +898,7 @@ void ProtocolParty<FieldType>::runOnline() {
     }
 
     t1 = high_resolution_clock::now();
-    timer->startSubTask("OutputPhase", iteration);
     outputPhase();
-    timer->endSubTask("OutputPhase", iteration);
     t2 = high_resolution_clock::now();
 
     duration = duration_cast<milliseconds>(t2-t1).count();
@@ -1038,7 +1222,7 @@ void ProtocolParty<FieldType>::publicReconstruction(vector<FieldType> &myShares,
 
     //cout<<"before round function 1"<<endl;
     //comm->roundfunctionI(sendBufsBytes, recBufsBytes,1);
-    roundFunctionSync(sendBufsBytes, recBufsBytes,1);
+    roundFunctionASync(sendBufsBytes, recBufsBytes,1);
 
     //cout<<"after round function 1"<<endl;
     if(flag_print) {
@@ -1097,7 +1281,7 @@ void ProtocolParty<FieldType>::publicReconstruction(vector<FieldType> &myShares,
             //cout << sendBufs2[i] << endl;
         } }
     //comm->roundfunctionI(sendBufs2Bytes, recBufs2Bytes,8);
-    roundFunctionSync(sendBufs2Bytes, recBufs2Bytes,8);
+    roundFunctionASync(sendBufs2Bytes, recBufs2Bytes,8);
     if(flag_print) {
         cout << "recBufs2[i]" << endl;
         for(int i = 0; i < N; i++)
@@ -1137,487 +1321,524 @@ void ProtocolParty<FieldType>::publicReconstruction(vector<FieldType> &myShares,
 template <class FieldType>
 bool ProtocolParty<FieldType>::preparationPhase(/*VDM<FieldType> &matrix_vand, HIM<FieldType> &matrix_him*/)
 {
-    vector<vector<byte>> recBufsBytes(N);
-    //vector<vector<byte>> recBufs1Bytes(N);
-    int robin = 0;
+	vector<vector<FieldType>> sendBufsElements(N);
+
+	int robin = 0;
 
     // the number of random double sharings we need altogether
     int no_random = circuit.getNrOfMultiplicationGates();
     vector<FieldType> x1(N),x2(N),y1(N),y2(N);
 
-    vector<vector<FieldType>> sendBufsElements(N);
-    vector<vector<byte>> sendBufsBytes(N);
+	// the number of buckets (each bucket requires one double-sharing
+	// from each party and gives N-2T random double-sharings)
+	int no_buckets = (no_random / (N-2*T))+1;
 
-    // the number of buckets (each bucket requires one double-sharing
-    // from each party and gives N-2T random double-sharings)
-    int no_buckets = (no_random / (N-2*T))+1;
+	int fieldByteSize = field->getElementSizeInBytes();
+	int fieldBytesSize = field->getElementSizeInBytes();
 
-    sharingBufTElements.resize(no_buckets*(N-2*T)); // my shares of the double-sharings
-    sharingBuf2TElements.resize(no_buckets*(N-2*T)); // my shares of the double-sharings
+	switch (internal_state) {
+	case PHASE0: {
+		tstart_internal_state = high_resolution_clock::now();
 
-    for(int i=0; i < N; i++)
-    {
-        //sendBufs[i] = "";
+//	    vector<vector<byte>> recBufsBytes(N);
+	    //vector<vector<byte>> recBufs1Bytes(N);
+//	    int robin = 0;
 
-        sendBufsElements[i].resize(no_buckets*2);
-        sendBufsBytes[i].resize(no_buckets*2*field->getElementSizeInBytes());
-        recBufsBytes[i].resize(no_buckets*2*field->getElementSizeInBytes());
-    }
+//	    // the number of random double sharings we need altogether
+//	    int no_random = circuit.getNrOfMultiplicationGates();
+//	    vector<FieldType> x1(N),x2(N),y1(N),y2(N);
 
-    /**
-     *  generate double sharings.
-     *  first degree t.
-     *  subsequent: degree 2t with same secret.
-     */
-    high_resolution_clock::time_point t1 = high_resolution_clock::now();
-    for(int k=0; k < no_buckets; k++)
-    {
-        // generate random degree-T polynomial
-        for(int i = 0; i < T+1; i++)
-        {
-            // A random field element, uniform distribution
-            x1[i] = field->Random();
+//	    vector<vector<FieldType>> sendBufsElements(N);
+//	    vector<vector<byte>> sendBufsBytes(N);
 
-        }
+//	    // the number of buckets (each bucket requires one double-sharing
+//	    // from each party and gives N-2T random double-sharings)
+//	    int no_buckets = (no_random / (N-2*T))+1;
 
-        x2[0] = x1[0];
+	    sharingBufTElements.resize(no_buckets*(N-2*T)); // my shares of the double-sharings
+	    sharingBuf2TElements.resize(no_buckets*(N-2*T)); // my shares of the double-sharings
 
+	    for(int i=0; i < N; i++) {
+	        sendBufsElements[i].resize(no_buckets*2);
+	        sendBufsBytes[i].resize(no_buckets*2*field->getElementSizeInBytes());
+	        recBufsBytes[i].resize(no_buckets*2*field->getElementSizeInBytes());
+	    }
 
-        for(int i = 1; i < 2*T+1; i++)
-        {
-            // otherwise random
-            x2[i] = field->Random();
-        }
+//	    cout << "BLAAA 4" << endl;
 
-        matrix_vand.MatrixMult(x1, y1, T+1); // eval poly at alpha-positions
-        matrix_vand.MatrixMult(x2, y2, 2*T+1); // eval poly at alpha-positions
+	    /**
+	     *  generate double sharings.
+	     *  first degree t.
+	     *  subsequent: degree 2t with same secret.
+	     */
+//	    high_resolution_clock::time_point t1 = high_resolution_clock::now();
+	    for(int k=0; k < no_buckets; k++) {
+	        // generate random degree-T polynomial
+	        for(int i = 0; i < T+1; i++) {
+	            // A random field element, uniform distribution
+	            x1[i] = field->Random();
+	        }
 
-        // prepare shares to be sent
-        for(int i=0; i < N; i++)
-        {
-            //cout << "y1[ " <<i<< "]" <<y1[i] << endl;
-            sendBufsElements[i][2*k] = y1[i];
-            sendBufsElements[i][2*k+1] = y2[i];
-        }
+	        x2[0] = x1[0];
 
+	        for(int i = 1; i < 2*T+1; i++) {
+	            // otherwise random
+	            x2[i] = field->Random();
+	        }
 
+	        matrix_vand.MatrixMult(x1, y1, T+1); // eval poly at alpha-positions
+	        matrix_vand.MatrixMult(x2, y2, 2*T+1); // eval poly at alpha-positions
 
+	        // prepare shares to be sent
+	        for(int i=0; i < N; i++) {
+	            //cout << "y1[ " <<i<< "]" <<y1[i] << endl;
+	            sendBufsElements[i][2*k] = y1[i];
+	            sendBufsElements[i][2*k+1] = y2[i];
+	        }
+	    }//end print one
 
-    }//end print one
+//	    cout << "BLAAA 5" << endl;
 
-
-
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < sendBufsElements[0].size(); k++) {
-
-               // cout << "before roundfunction4 send to " <<i <<" element: "<< k << " " << sendBufsElements[i][k] << endl;
-            }
-        }
-    }
-
-    high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    auto duration = duration_cast<milliseconds>( t2 - t1 ).count();
-    //cout << "generate random degree-T polynomial took : " <<duration<<" ms"<<endl;
-
-    if(flag_print) {
-        cout << "sendBufs" << endl;
-        cout << "N" << N << endl;
-        cout << "T" << T << endl;
-
-
-
-    }
+//	    if (flag_print) {
+//	        for (int i = 0; i < N; i++) {
+//	            for (int k = 0; k < sendBufsElements[0].size(); k++) {
 //
-    int fieldByteSize = field->getElementSizeInBytes();
-    for(int i=0; i < N; i++)
-    {
-        for(int j=0; j<sendBufsElements[i].size();j++) {
-            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
-        }
-    }
+//	               // cout << "before roundfunction4 send to " <<i <<" element: "<< k << " " << sendBufsElements[i][k] << endl;
+//	            }
+//	        }
+//	    }
+
+	    if(flag_print) {
+	        cout << "sendBufs" << endl;
+	        cout << "N" << N << endl;
+	        cout << "T" << T << endl;
+	    }
+	//
+//	    int fieldByteSize = field->getElementSizeInBytes();
+	    for(int i=0; i < N; i++) {
+	        for(int j=0; j<sendBufsElements[i].size();j++) {
+	            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
+	        }
+	    }
+
+//	    high_resolution_clock::time_point t3 = high_resolution_clock::now();
+	    roundFunctionASync(sendBufsBytes, recBufsBytes, 4);
+
+		break;
+	}
+
+	case PHASE1: {
+	    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	    auto duration = duration_cast<milliseconds>( t2 - tstart_internal_state ).count();
+	    cout << "preparationPhase::PHASE0 took : " <<duration<<" ms"<<endl;
+
+	    tstart_internal_state = high_resolution_clock::now();
+
+	    //vector<vector<FieldType>> sendBufs1Elements(N);
+	    //vector<vector<byte>> sendBufs1Bytes(N);
+
+	    for (int i=0; i<N; i++) {
+	        sendBufsElements[i].clear();
+	    }
+
+	    // x1 : used for the N degree-t sharings
+	    // x2 : used for the N degree-2t sharings
+	    for (int k=0; k < no_buckets; k++) {
+	        // generate random degree-T polynomial
+	        for (int i = 0; i < N; i++) {
+	            x1[i] = field->bytesToElement(recBufsBytes[i].data() + (2*k*fieldBytesSize));
+	            x2[i] = field->bytesToElement(recBufsBytes[i].data() + ((2*k + 1)*fieldBytesSize));
+
+	        }
+	        matrix_him.MatrixMult(x1, y1);
+	        matrix_him.MatrixMult(x2, y2);
+	        // these shall be checked
+	        for (int i = 0; i < 2 * T; i++) {
+	            sendBufsElements[robin].push_back(y1[i]);
+	            sendBufsElements[robin].push_back(y2[i]);
+	            robin = (robin+1) % N; // next robin
+
+	        }
+	        // Y1 : the degree-t shares of my poly
+	        // Y2 : the degree 2t shares of my poly
+	        for (int i = 2 * T; i < N; i++) {
+	            sharingBufTElements[k*(N-2*T) + i - 2*T] = y1[i];
+	            sharingBuf2TElements[k*(N-2*T) + i - 2*T] =  y2[i];
+	        }
+
+	        x2[0] = *(field->GetZero());
+	        x1[0] = *(field->GetZero());
+	    }
+
+	    for(int i=0; i < N; i++) {
+	        sendBufsBytes[i].resize(sendBufsElements[i].size()*fieldByteSize);
+	        //cout<< "size of sendBufs1Elements["<<i<<" ].size() is " << sendBufs1Elements[i].size() <<"myID =" <<  m_partyId<<endl;
+	        recBufsBytes[i].resize(sendBufsElements[m_partyId].size()*fieldByteSize);
+	        for(int j=0; j<sendBufsElements[i].size();j++) {
+	            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
+	        }
+	    }
+
+	    roundFunctionASync(sendBufsBytes, recBufsBytes, 5);
+
+		break;
+	}
+
+	case PHASE2: {
+	    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	    auto duration = duration_cast<milliseconds>( t2 - tstart_internal_state ).count();
+	    cout << "preparationPhase::PHASE1 took : " <<duration<<" ms"<<endl;
+
+		tstart_internal_state = high_resolution_clock::now();
+
+	    if(flag_print) {
+	        for (int i = 0; i < N; i++) {
+	            for (int k = 0; k < sendBufsBytes[i].size(); k++) {
+	                cout << "roundfunction4 send to " <<i <<" element: "<< k << " " << (int)sendBufsBytes[i][k] << endl;
+	            }
+	        }
+	    };
+
+	    if(flag_print) {
+	        for (int i = 0; i < N; i++) {
+	            for (int k = 0; k < recBufsBytes[i].size(); k++) {
+	                cout << "roundfunction4 receive from " <<i <<" element: "<< k << " " << (int) recBufsBytes[i][k] << endl;
+	            }
+	        }
+	    }
+
+	    /**
+	     * Apply hyper-invertible matrix on each bucket.
+	     * From the resulting sharings, 2T are being reconstructed towards some party,
+	     * the remaining N-2T are kept as prepared sharings.
+	     * For balancing, we do round-robin the party how shall reconstruct and check!
+	     */
+	    int count = no_buckets * (2*T) / N; // nr of sharings *I* have to check
+	    // got one in the last round
+	    if(no_buckets * (2*T)%N > m_partyId) { // maybe -1
+	        count++;
+	    }
+
+	    for(int k=0; k < count; k++) {
+	        for (int i = 0; i < N; i++) {
+	            x1[i] = field->bytesToElement(recBufsBytes[i].data() + (2*k*fieldBytesSize));
+	            x2[i] = field->bytesToElement(recBufsBytes[i].data() + ((2*k +1)*fieldBytesSize));
+	        }
 
 
-    high_resolution_clock::time_point t3 = high_resolution_clock::now();
-    //comm->roundfunctionI(sendBufsBytes, recBufsBytes,4);
-    roundFunctionSync(sendBufsBytes, recBufsBytes,4);
-    high_resolution_clock::time_point t4 = high_resolution_clock::now();
-    auto duration2 = duration_cast<milliseconds>( t4 - t3 ).count();
-    //cout << "roundfunctionI took : " <<duration2<<" ms"<<endl;
+	        vector<FieldType> x_until_d(N);
+	        for(int i=0; i<T; i++) {
+	            x_until_d[i] = x1[i];
+	        }
+	        for(int i=T; i<N; i++) {
+	            x_until_d[i] = *(field->GetZero());
+	        }
+	        if(flag_print) {
+	            cout << "k " << k << "interpolate(x1).toString()  " << field->elementToString(interpolate(x1)) << endl;
+	            cout << "k " << k << "interpolate(x2).toString()  " << field->elementToString(interpolate(x2)) << endl;
+	        }
+	        // Check that x1 is t-consistent and x2 is 2t-consistent and secret is the same
+	        if(!checkConsistency(x1,T) || !checkConsistency(x2,2*T) ||
+	                (interpolate(x1)) != (interpolate(x2)))  {
+	            // cheating detected, abort
+	            if(flag_print) {
+	                cout << "k" << k<< endl;}
+	            return false;
+	        }
+	    }
 
+	    t2 = high_resolution_clock::now();
+	    duration = duration_cast<milliseconds>( t2 - tstart_internal_state ).count();
+	    cout << "preparationPhase::PHASE2 took : " <<duration<<" ms"<<endl;
 
+		break;
+	}
+	}
 
-
-
-
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < sendBufsBytes[0].size(); k++) {
-
-                cout << "roundfunction4 send to " <<i <<" element: "<< k << " " << (int)sendBufsBytes[i][k] << endl;
-            }
-        }
-    }
-
-    //cout << endl;
-
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < recBufsBytes[0].size(); k++) {
-                cout << "roundfunction4 receive from " <<i <<" element: "<< k << " " << (int) recBufsBytes[i][k] << endl;
-            }
-        }
-    }
-
-
-    /**
-     * Apply hyper-invertible matrix on each bucket.
-     * From the resulting sharings, 2T are being reconstructed towards some party,
-     * the remaining N-2T are kept as prepared sharings.
-     * For balancing, we do round-robin the party how shall reconstruct and check!
-     */
-
-
-    //vector<vector<FieldType>> sendBufs1Elements(N);
-    //vector<vector<byte>> sendBufs1Bytes(N);
-
-    for(int i=0; i<N; i++){
-        sendBufsElements[i].clear();
-
-    }
-
-    int fieldBytesSize = field->getElementSizeInBytes();
-
-    // x1 : used for the N degree-t sharings
-    // x2 : used for the N degree-2t sharings
-    for(int k=0; k < no_buckets; k++) {
-        // generate random degree-T polynomial
-        for (int i = 0; i < N; i++) {
-            x1[i] = field->bytesToElement(recBufsBytes[i].data() + (2*k*fieldBytesSize));
-            x2[i] = field->bytesToElement(recBufsBytes[i].data() + ((2*k + 1)*fieldBytesSize));
-
-        }
-        matrix_him.MatrixMult(x1, y1);
-        matrix_him.MatrixMult(x2, y2);
-        // these shall be checked
-        for (int i = 0; i < 2 * T; i++) {
-              sendBufsElements[robin].push_back(y1[i]);
-            sendBufsElements[robin].push_back(y2[i]);
-            robin = (robin+1) % N; // next robin
-
-        }
-        // Y1 : the degree-t shares of my poly
-        // Y2 : the degree 2t shares of my poly
-        for (int i = 2 * T; i < N; i++) {
-
-            sharingBufTElements[k*(N-2*T) + i - 2*T] = y1[i];
-            sharingBuf2TElements[k*(N-2*T) + i - 2*T] =  y2[i];
-        }
-
-
-
-        x2[0] = *(field->GetZero());
-        x1[0] = *(field->GetZero());
-
-    }
-
-    for(int i=0; i < N; i++)
-    {
-        sendBufsBytes[i].resize(sendBufsElements[i].size()*fieldByteSize);
-        //cout<< "size of sendBufs1Elements["<<i<<" ].size() is " << sendBufs1Elements[i].size() <<"myID =" <<  m_partyId<<endl;
-        recBufsBytes[i].resize(sendBufsElements[m_partyId].size()*fieldByteSize);
-        for(int j=0; j<sendBufsElements[i].size();j++) {
-            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
-        }
-    }
-
-
-    if(flag_print) {
-        cout << "before round" << endl;}
-    //comm->roundfunctionI(sendBufs1Bytes, recBufsBytes,5);
-
-
-    t3 = high_resolution_clock::now();
-    //comm->roundfunctionI(sendBufsBytes, recBufsBytes,4);
-    roundFunctionSync(sendBufsBytes, recBufsBytes,5);
-    t4 = high_resolution_clock::now();
-    duration2 = duration_cast<milliseconds>( t4 - t3 ).count();
-    //cout << "roundfunction 5 took : " <<duration2<<" ms"<<endl;
-
-
-
-    //cout<<"after round function 5"<<endl;
-    if(flag_print) {
-        cout << "after round" << endl;}
-    int count = no_buckets * (2*T) / N; // nr of sharings *I* have to check
-    // got one in the last round
-    if(no_buckets * (2*T)%N > m_partyId) { // maybe -1
-        count++;
-    }
-
-
-    for(int k=0; k < count; k++) {
-        for (int i = 0; i < N; i++) {
-
-            x1[i] = field->bytesToElement(recBufsBytes[i].data() + (2*k*fieldBytesSize));
-            x2[i] = field->bytesToElement(recBufsBytes[i].data() + ((2*k +1)*fieldBytesSize));
-        }
-
-
-        vector<FieldType> x_until_d(N);
-        for(int i=0; i<T; i++)
-        {
-            x_until_d[i] = x1[i];
-        }
-        for(int i=T; i<N; i++)
-        {
-            x_until_d[i] = *(field->GetZero());
-        }
-        if(flag_print) {
-
-            //  cout <<"k "<<k<< "tinterpolate(x1).toString()  " << tinterpolate(x_until_d).toString() << endl;
-            cout << "k " << k << "interpolate(x1).toString()  " << field->elementToString(interpolate(x1)) << endl;
-            cout << "k " << k << "interpolate(x2).toString()  " << field->elementToString(interpolate(x2)) << endl;
-        }
-        // Check that x1 is t-consistent and x2 is 2t-consistent and secret is the same
-        if(!checkConsistency(x1,T) || !checkConsistency(x2,2*T) ||
-                (interpolate(x1)) != (interpolate(x2)))  {
-            // cheating detected, abort
-            if(flag_print) {
-                cout << "k" << k<< endl;}
-            return false;
-        }
-    }
     return true;
 }
 
 template <class FieldType>
 bool ProtocolParty<FieldType>::RandomSharingForInputs()
 {
-    vector<vector<byte>> recBufsBytes(N);
-    //vector<vector<byte>> recBufs1Bytes(N);
-    int robin = 0;
+	int robin = 0;
 
-    // the number of random double sharings we need altogether
-    int no_random = circuit.getNrOfInputGates();
-    vector<FieldType> x1(N),y1(N);
+	// the number of random double sharings we need altogether
+	int no_random = circuit.getNrOfInputGates();
+	vector<FieldType> x1(N),y1(N);
 
-    vector<vector<FieldType>> sendBufsElements(N);
-    vector<vector<byte>> sendBufsBytes(N);
+	vector<vector<FieldType>> sendBufsElements(N);
+//    vector<vector<byte>> sendBufsBytes(N);
 
-    // the number of buckets (each bucket requires one double-sharing
-    // from each party and gives N-2T random double-sharings)
-    int no_buckets = (no_random / (N-2*T))+1;
-
-    //sharingBufTElements.resize(no_buckets*(N-2*T)); // my shares of the double-sharings
-    //sharingBuf2TElements.resize(no_buckets*(N-2*T)); // my shares of the double-sharings
-    sharingBufInputsTElements.resize(no_buckets*(N-2*T));
-
-    for(int i=0; i < N; i++)
-    {
-        //sendBufs[i] = "";
-
-        sendBufsElements[i].resize(no_buckets);
-        sendBufsBytes[i].resize(no_buckets*field->getElementSizeInBytes());
-        recBufsBytes[i].resize(no_buckets*field->getElementSizeInBytes());
-    }
-
-    /**
-     *  generate double sharings.
-     *  first degree t.
-     *  subsequent: degree 2t with same secret.
-     */
-    high_resolution_clock::time_point t1 = high_resolution_clock::now();
-    for(int k=0; k < no_buckets; k++)
-    {
-        // generate random degree-T polynomial
-        for(int i = 0; i < T+1; i++)
-        {
-            // A random field element, uniform distribution
-            x1[i] = field->Random();
-
-        }
-
-        matrix_vand.MatrixMult(x1, y1, T+1); // eval poly at alpha-positions
+	// the number of buckets (each bucket requires one double-sharing
+	// from each party and gives N-2T random double-sharings)
+	int no_buckets = (no_random / (N-2*T))+1;
 
 
-        // prepare shares to be sent
-        for(int i=0; i < N; i++)
-        {
-            //cout << "y1[ " <<i<< "]" <<y1[i] << endl;
-            sendBufsElements[i][k] = y1[i];
+	int fieldByteSize = field->getElementSizeInBytes();
+	int fieldBytesSize = field->getElementSizeInBytes();
 
-        }
+	switch (internal_state) {
+	case PHASE0: {
+		tstart_internal_state = high_resolution_clock::now();
 
-
-
-
-    }//end print one
-
-
-
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < sendBufsElements[0].size(); k++) {
-
-                // cout << "before roundfunction4 send to " <<i <<" element: "<< k << " " << sendBufsElements[i][k] << endl;
-            }
-        }
-    }
-
-    high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    auto duration = duration_cast<milliseconds>( t2 - t1 ).count();
-    //cout << "generate random degree-T polynomial took : " <<duration<<" ms"<<endl;
-
-    if(flag_print) {
-        cout << "sendBufs" << endl;
-        cout << "N" << N << endl;
-        cout << "T" << T << endl;
-
-
-
-    }
+		//    vector<vector<byte>> recBufsBytes(N);
+		//vector<vector<byte>> recBufs1Bytes(N);
+//		int robin = 0;
 //
-    int fieldByteSize = field->getElementSizeInBytes();
-    for(int i=0; i < N; i++)
-    {
-        for(int j=0; j<sendBufsElements[i].size();j++) {
-            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
-        }
-    }
+//		// the number of random double sharings we need altogether
+//		int no_random = circuit.getNrOfInputGates();
+//		vector<FieldType> x1(N),y1(N);
+//
+//		vector<vector<FieldType>> sendBufsElements(N);
+//	//    vector<vector<byte>> sendBufsBytes(N);
+//
+//		// the number of buckets (each bucket requires one double-sharing
+//		// from each party and gives N-2T random double-sharings)
+//		int no_buckets = (no_random / (N-2*T))+1;
+
+		//sharingBufTElements.resize(no_buckets*(N-2*T)); // my shares of the double-sharings
+		//sharingBuf2TElements.resize(no_buckets*(N-2*T)); // my shares of the double-sharings
+		sharingBufInputsTElements.resize(no_buckets*(N-2*T));
+
+		for(int i=0; i < N; i++)
+		{
+			//sendBufs[i] = "";
+
+			sendBufsElements[i].resize(no_buckets);
+			sendBufsBytes[i].resize(no_buckets*field->getElementSizeInBytes());
+			recBufsBytes[i].resize(no_buckets*field->getElementSizeInBytes());
+		}
+
+		/**
+		 *  generate double sharings.
+		 *  first degree t.
+		 *  subsequent: degree 2t with same secret.
+		 */
+		for (int k=0; k < no_buckets; k++) {
+			// generate random degree-T polynomial
+			for (int i = 0; i < T+1; i++) {
+				// A random field element, uniform distribution
+				x1[i] = field->Random();
+			}
+
+			matrix_vand.MatrixMult(x1, y1, T+1); // eval poly at alpha-positions
+
+			// prepare shares to be sent
+			for (int i=0; i < N; i++) {
+				//cout << "y1[ " <<i<< "]" <<y1[i] << endl;
+				sendBufsElements[i][k] = y1[i];
+
+			}
+		}//end print one
+
+//		if (flag_print) {
+//			for (int i = 0; i < N; i++) {
+//				for (int k = 0; k < sendBufsElements[0].size(); k++) {
+//					// cout << "before roundfunction4 send to " <<i <<" element: "<< k << " " << sendBufsElements[i][k] << endl;
+//				}
+//			}
+//		}
+
+//		high_resolution_clock::time_point t2 = high_resolution_clock::now();
+//		auto duration = duration_cast<milliseconds>( t2 - t1 ).count();
+		//cout << "generate random degree-T polynomial took : " <<duration<<" ms"<<endl;
+
+		if(flag_print) {
+			cout << "sendBufs" << endl;
+			cout << "N" << N << endl;
+			cout << "T" << T << endl;
+		}
+
+	//
+//		int fieldByteSize = field->getElementSizeInBytes();
+		for(int i=0; i < N; i++) {
+			for(int j=0; j<sendBufsElements[i].size();j++) {
+				field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
+			}
+		}
+
+		roundFunctionASync(sendBufsBytes, recBufsBytes, 4);
+
+//	    for (int i = 0; i < N; i++) {
+//	        cout<<"======= BLAAA 1: sendBufsElements: "<<i<< ":"<<sendBufsElements[i].size()<<endl;
+//	    }
+//
+//	    for (int i = 0; i < N; i++) {
+//	        cout<<"======= BLAAA 1: recBufsBytes: "<<i<< ":"<<recBufsBytes[i].size()<<endl;
+//	    }
 
 
-    high_resolution_clock::time_point t3 = high_resolution_clock::now();
-    //comm->roundfunctionI(sendBufsBytes, recBufsBytes,4);
-    roundFunctionSync(sendBufsBytes, recBufsBytes,4);
-    high_resolution_clock::time_point t4 = high_resolution_clock::now();
-    auto duration2 = duration_cast<milliseconds>( t4 - t3 ).count();
-    //cout << "roundfunctionI took : " <<duration2<<" ms"<<endl;
+		break;
+	}
+
+	case PHASE1: {
+	    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	    auto duration = duration_cast<milliseconds>( t2 - tstart_internal_state ).count();
+	    cout << "RandomSharingForInputs::PHASE0 took : " <<duration<<" ms"<<endl;
+
+	    tstart_internal_state = high_resolution_clock::now();
+
+//	    vector<vector<FieldType>> sendBufsElements(N);
+
+	    if (flag_print) {
+			for (int i = 0; i < N; i++) {
+				for (int k = 0; k < sendBufsBytes[0].size(); k++) {
+					cout << "roundfunction4 send to " <<i <<" element: "<< k << " " << (int)sendBufsBytes[i][k] << endl;
+				}
+			}
+		}
+
+		if (flag_print) {
+			for (int i = 0; i < N; i++) {
+				for (int k = 0; k < recBufsBytes[0].size(); k++) {
+					cout << "roundfunction4 receive from " <<i <<" element: "<< k << " " << (int) recBufsBytes[i][k] << endl;
+				}
+			}
+		}
+
+		/**
+		 * Apply hyper-invertible matrix on each bucket.
+		 * From the resulting sharings, 2T are being reconstructed towards some party,
+		 * the remaining N-2T are kept as prepared sharings.
+		 * For balancing, we do round-robin the party how shall reconstruct and check!
+		 */
+
+		for (int i=0; i<N; i++){
+			sendBufsElements[i].clear();
+		}
+
+//	    for (int i = 0; i < N; i++) {
+//	        cout<<"======= BLAAA 2: sendBufsElements: "<<i<< ":"<<sendBufsElements[i].size()<<endl;
+//	    }
+//
+//	    for (int i = 0; i < N; i++) {
+//	        cout<<"======= BLAAA 2: recBufsBytes: "<<i<< ":"<<recBufsBytes[i].size()<<endl;
+//	    }
+
+//		int fieldBytesSize = field->getElementSizeInBytes();
 
 
+//		for (int i = 0; i < N; i++) {
+//			cout<<"======= BLAAA 0 recBufsBytes "<<i<<" ["<<recBufsBytes[i].data()[0]<<", "<<recBufsBytes[i].data()[recBufsBytes[i].size()-1]<<endl;
+//		}
+
+		// x1 : used for the N degree-t sharings
+		// x2 : used for the N degree-2t sharings
+		for(int k=0; k < no_buckets; k++) {
+//			cout<<"======= BLAAA 2.1"<<endl;
+			// generate random degree-T polynomial
+			for (int i = 0; i < N; i++) {
+				x1[i] = field->bytesToElement(recBufsBytes[i].data() + (k*fieldBytesSize));
+			}
+
+			matrix_him.MatrixMult(x1, y1);
+			// these shall be checked
+			for (int i = 0; i < 2 * T; i++) {
+//				if (i==0){
+//					cout<<"======= BLAAA 2.2; T= "<<T<<endl;
+//				}
+				sendBufsElements[robin].push_back(y1[i]);
+				robin = (robin+1) % N; // next robin
+
+			}
+			// Y1 : the degree-t shares of my poly
+			// Y2 : the degree 2t shares of my poly
+			for (int i = 2 * T; i < N; i++) {
+				sharingBufInputsTElements[k*(N-2*T) + i - 2*T] = y1[i];
+				//sharingBufTElements[k*(N-2*T) + i - 2*T] = y1[i];
+				//sharingBuf2TElements[k*(N-2*T) + i - 2*T] =  y2[i];
+//				cout<<"======= BLAAA k"<<k*(N-2*T) + i - 2*T<< ", i"<<i<<" y1[i]:"<<y1[i]<<endl;
+			}
 
 
+		}
+
+//	    for (int i = 0; i < N; i++) {
+//	        cout<<"======= BLAAA 3: sendBufsBytes: "<<i<< ":"<<sendBufsBytes[i].size()<<endl;
+//	    }
+//	    for (int i = 0; i < N; i++) {
+//	        cout<<"======= BLAAA 3: sendBufsElements: "<<i<< ":"<<sendBufsElements[i].size()<<endl;
+//	    }
+//	    for (int i = 0; i < N; i++) {
+//	        cout<<"======= BLAAA 3: recBufsBytes: "<<i<< ":"<<recBufsBytes[i].size()<<endl;
+//	    }
+//	    cout<<"======= BLAAA 3: fieldByteSize: "<<fieldByteSize<<endl;
+
+		for(int i=0; i < N; i++) {
+			sendBufsBytes[i].resize(sendBufsElements[i].size()*fieldByteSize);
+			recBufsBytes[i].resize(sendBufsElements[m_partyId].size()*fieldByteSize);
+//			cout<<"======= BLAAA 3.5: "<<i<< ":"<<sendBufsBytes[parties[i]->getID()].size()<<endl;
+			for(int j=0; j<sendBufsElements[i].size();j++) {
+				field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
+			}
+//			cout<<"======= BLAAA 3.6: "<<i<< ":"<<sendBufsBytes[parties[i]->getID()].size()<<endl;
+		}
+
+//	    for (int i = 0; i < N; i++) {
+//	        cout<<"======= BLAAA 4: sendBufsBytes: "<<i<< ":"<<sendBufsBytes[i].size()<<endl;
+//	    }
+//	    for (int i = 0; i < N; i++) {
+//	        cout<<"======= BLAAA 4: sendBufsElements: "<<i<< ":"<<sendBufsElements[i].size()<<endl;
+//	    }
+//	    for (int i = 0; i < N; i++) {
+//	        cout<<"======= BLAAA 4: recBufsBytes: "<<i<< ":"<<recBufsBytes[i].size()<<endl;
+//	    }
+
+		roundFunctionASync(sendBufsBytes, recBufsBytes, 5);
+
+		break;
+	}
+
+	case PHASE2: {
+	    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	    auto duration = duration_cast<milliseconds>( t2 - tstart_internal_state ).count();
+	    cout << "RandomSharingForInputs::PHASE1 took : " <<duration<<" ms"<<endl;
+
+	    tstart_internal_state = high_resolution_clock::now();
+
+	    int count = no_buckets * (2*T) / N; // nr of sharings *I* have to check
+	    // got one in the last round
+	    if (no_buckets * (2*T)%N > m_partyId) { // maybe -1
+	        count++;
+	    }
+
+	    for (int k=0; k < count; k++) {
+	        for (int i = 0; i < N; i++) {
+
+	            x1[i] = field->bytesToElement(recBufsBytes[i].data() + (k*fieldBytesSize));
+	        }
 
 
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < sendBufsBytes[0].size(); k++) {
+	        vector<FieldType> x_until_d(N);
+	        for(int i=0; i<T; i++)
+	        {
+	            x_until_d[i] = x1[i];
+	        }
+	        for(int i=T; i<N; i++)
+	        {
+	            x_until_d[i] = *(field->GetZero());
+	        }
+	        if(flag_print) {
+	            cout << "k " << k << "interpolate(x1).toString()  " << field->elementToString(interpolate(x1)) << endl;
+	        }
+	        // Check that x1 is t-consistent and x2 is 2t-consistent and secret is the same
+	        if(!checkConsistency(x1,T) )  {
+	            // cheating detected, abort
+	            if(flag_print) {
+	                cout << "k" << k<< endl;}
+	            return false;
+	        }
+	    }
 
-                cout << "roundfunction4 send to " <<i <<" element: "<< k << " " << (int)sendBufsBytes[i][k] << endl;
-            }
-        }
-    }
+	    t2 = high_resolution_clock::now();
+	    duration = duration_cast<milliseconds>( t2 - tstart_internal_state ).count();
+		cout << "RandomSharingForInputs::PHASE2 took : " <<duration<<" ms"<<endl;
 
-    //cout << endl;
+		break;
+	}
+	}
 
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < recBufsBytes[0].size(); k++) {
-                cout << "roundfunction4 receive from " <<i <<" element: "<< k << " " << (int) recBufsBytes[i][k] << endl;
-            }
-        }
-    }
-
-
-    /**
-     * Apply hyper-invertible matrix on each bucket.
-     * From the resulting sharings, 2T are being reconstructed towards some party,
-     * the remaining N-2T are kept as prepared sharings.
-     * For balancing, we do round-robin the party how shall reconstruct and check!
-     */
-
-
-    //vector<vector<FieldType>> sendBufs1Elements(N);
-    //vector<vector<byte>> sendBufs1Bytes(N);
-
-    for(int i=0; i<N; i++){
-        sendBufsElements[i].clear();
-
-    }
-
-    int fieldBytesSize = field->getElementSizeInBytes();
-
-    // x1 : used for the N degree-t sharings
-    // x2 : used for the N degree-2t sharings
-    for(int k=0; k < no_buckets; k++) {
-        // generate random degree-T polynomial
-        for (int i = 0; i < N; i++) {
-            x1[i] = field->bytesToElement(recBufsBytes[i].data() + (k*fieldBytesSize));
-
-        }
-        matrix_him.MatrixMult(x1, y1);
-        // these shall be checked
-        for (int i = 0; i < 2 * T; i++) {
-            sendBufsElements[robin].push_back(y1[i]);
-            robin = (robin+1) % N; // next robin
-
-        }
-        // Y1 : the degree-t shares of my poly
-        // Y2 : the degree 2t shares of my poly
-        for (int i = 2 * T; i < N; i++) {
-
-            sharingBufInputsTElements[k*(N-2*T) + i - 2*T] = y1[i];
-            //sharingBufTElements[k*(N-2*T) + i - 2*T] = y1[i];
-            //sharingBuf2TElements[k*(N-2*T) + i - 2*T] =  y2[i];
-        }
-
-    }
-
-    for(int i=0; i < N; i++)
-    {
-        sendBufsBytes[i].resize(sendBufsElements[i].size()*fieldByteSize);
-        //cout<< "size of sendBufs1Elements["<<i<<" ].size() is " << sendBufs1Elements[i].size() <<"myID =" <<  m_partyId<<endl;
-        recBufsBytes[i].resize(sendBufsElements[m_partyId].size()*fieldByteSize);
-        for(int j=0; j<sendBufsElements[i].size();j++) {
-            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
-        }
-    }
-
-
-    if(flag_print)
-        cout << "before round" << endl;
-
-    t3 = high_resolution_clock::now();
-    roundFunctionSync(sendBufsBytes, recBufsBytes,5);
-    t4 = high_resolution_clock::now();
-    duration2 = duration_cast<milliseconds>( t4 - t3 ).count();
-
-    if(flag_print) {
-        cout << "after round" << endl;}
-    int count = no_buckets * (2*T) / N; // nr of sharings *I* have to check
-    // got one in the last round
-    if(no_buckets * (2*T)%N > m_partyId) { // maybe -1
-        count++;
-    }
-
-
-    for(int k=0; k < count; k++) {
-        for (int i = 0; i < N; i++) {
-
-            x1[i] = field->bytesToElement(recBufsBytes[i].data() + (k*fieldBytesSize));
-        }
-
-
-        vector<FieldType> x_until_d(N);
-        for(int i=0; i<T; i++)
-        {
-            x_until_d[i] = x1[i];
-        }
-        for(int i=T; i<N; i++)
-        {
-            x_until_d[i] = *(field->GetZero());
-        }
-        if(flag_print) {
-            cout << "k " << k << "interpolate(x1).toString()  " << field->elementToString(interpolate(x1)) << endl;
-        }
-        // Check that x1 is t-consistent and x2 is 2t-consistent and secret is the same
-        if(!checkConsistency(x1,T) )  {
-            // cheating detected, abort
-            if(flag_print) {
-                cout << "k" << k<< endl;}
-            return false;
-        }
-    }
     return true;
 }
 /**
@@ -1628,101 +1849,127 @@ bool ProtocolParty<FieldType>::RandomSharingForInputs()
 template <class FieldType>
 bool ProtocolParty<FieldType>::inputPreparation()
 {
-    vector<vector<FieldType>> sendBufsElements(N); // upper bound
-    vector<vector<byte>> sendBufsBytes(N);
+	vector<vector<FieldType>> sendBufsElements(N); // upper bound
+	//    vector<vector<byte>> sendBufsBytes(N);
 
-    vector<vector<FieldType>> recBufsElements(N);
-    vector<vector<byte>> recBufsBytes(N);
-    vector<FieldType> x1(N); // vector for the shares of my inputs
-    FieldType elem;
-    FieldType secret;
-    int i;
+	vector<vector<FieldType>> recBufsElements(N);
+	//    vector<vector<byte>> recBufsBytes(N);
+	vector<FieldType> x1(N); // vector for the shares of my inputs
 
+	int fieldByteSize = field->getElementSizeInBytes();
 
-    for(int k = 0; k < numOfInputGates; k++)//these are only input gates
-    {
-        gateShareArr[circuit.getGates()[k].output] = sharingBufInputsTElements[k];
-        i = (circuit.getGates())[k].party; // the number of party which has the input
-        // reconstruct sharing towards input party
-       sendBufsElements[i].push_back(gateShareArr[circuit.getGates()[k].output]);
+	FieldType secret;
 
-    }
-    if(flag_print) {
-        cout << "sendBufs[i] in input preperation" << endl;
-        for (int i = 0; i < N; i++) {
-            //cout << sendBufs[i] << endl;
-        }
-    }
+	switch (internal_state) {
+	case PHASE0: {
+		tstart_internal_state = high_resolution_clock::now();
 
-    int fieldByteSize = field->getElementSizeInBytes();
-
-    for(int i=0; i < N; i++)
-    {
-        sendBufsBytes[i].resize(sendBufsElements[i].size()*fieldByteSize);
-        for(int j=0; j<sendBufsElements[i].size();j++) {
-            field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
-        }
-    }
-
-    //cout<<"size of sendbuf" << sendBufsBytes[m_partyId-1].size()<< endl;
-
-    for(int i=0; i<N; i++){
-        recBufsBytes[i].resize(sendBufsBytes[m_partyId].size());
-    }
+//		vector<vector<FieldType>> sendBufsElements(N); // upper bound
+//		//    vector<vector<byte>> sendBufsBytes(N);
+//
+//		vector<vector<FieldType>> recBufsElements(N);
+//		//    vector<vector<byte>> recBufsBytes(N);
+//		vector<FieldType> x1(N); // vector for the shares of my inputs
+		FieldType elem;
+//		FieldType secret;
+		int i;
 
 
-    roundFunctionSync(sendBufsBytes, recBufsBytes,6);
+		for(int k = 0; k < numOfInputGates; k++)//these are only input gates
+		{
+			gateShareArr[circuit.getGates()[k].output] = sharingBufInputsTElements[k];
+			i = (circuit.getGates())[k].party; // the number of party which has the input
+			// reconstruct sharing towards input party
+		   sendBufsElements[i].push_back(gateShareArr[circuit.getGates()[k].output]);
 
-    //cout<<"after round function 6";
-    //comm->roundfunctionI(sendBufsBytes, recBufsBytes,6);
+		}
+		if(flag_print) {
+			cout << "sendBufs[i] in input preperation" << endl;
+//			for (int i = 0; i < N; i++) {
+//				//cout << sendBufs[i] << endl;
+//			}
+		}
 
-    //turn the recbuf into recbuf of elements
-    for(int i=0; i < N; i++)
-    {
-        recBufsElements[i].resize((recBufsBytes[i].size()) / fieldByteSize);
-        for(int j=0; j<recBufsElements[i].size();j++) {
-            recBufsElements[i][j] = field->bytesToElement(recBufsBytes[i].data() + ( j * fieldByteSize));
-        }
-    }
+//		int fieldByteSize = field->getElementSizeInBytes();
+		for(int i=0; i < N; i++)
+		{
+			sendBufsBytes[i].resize(sendBufsElements[i].size()*fieldByteSize);
+			for(int j=0; j<sendBufsElements[i].size();j++) {
+				field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
+			}
+		}
 
+		//cout<<"size of sendbuf" << sendBufsBytes[m_partyId-1].size()<< endl;
 
-    if(flag_print) {
-        for(int k = 0; k < recBufsElements[0].size(); k++) {
-
-            //cout << "roundfunction6 recBufs" << k << " " << recBufsElements[0][k] << endl;
-        } }
-
-    //cout << endl;
-
-    if(flag_print) {
-        for(int k = 0; k < sendBufsElements[0].size(); k++) {
-
-            //cout << "roundfunction6 recBufs" << k << " " << sendBufsElements[0][k] << endl;
-        } }
+		for(int i=0; i<N; i++){
+			recBufsBytes[i].resize(sendBufsBytes[m_partyId].size());
+		}
 
 
-    int counter = 0;
-    // reconstruct my random input values
-    for(int k = 0; k < numOfInputGates; k++) {
-        if (circuit.getGates()[k].party == m_partyId) {
+		roundFunctionASync(sendBufsBytes, recBufsBytes, 6);
 
-            for (int i = 0; i < N; i++) {
-                x1[i] = recBufsElements[i][counter];
-            }
-            counter++;
-            if(!checkConsistency(x1, T))
-            {
-                // someone cheated!
-                return false;
-            }
-            // the (random) secret
-            secret = interpolate(x1);
+		break;
+	}
 
-            gateValueArr[k] = secret;
-            if(flag_print) {
-                cout << "           the secret is " << field->elementToString(secret) << endl;}
-        }
-    }
+	case PHASE1: {
+	    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+	    auto duration = duration_cast<milliseconds>( t2 - tstart_internal_state ).count();
+	    cout << "inputPreparation::PHASE0 took : " <<duration<<" ms"<<endl;
+
+	    tstart_internal_state = high_resolution_clock::now();
+
+	    //turn the recbuf into recbuf of elements
+	    for (int i=0; i < N; i++)
+	    {
+	        recBufsElements[i].resize((recBufsBytes[i].size()) / fieldByteSize);
+	        for (int j=0; j<recBufsElements[i].size();j++) {
+	            recBufsElements[i][j] = field->bytesToElement(recBufsBytes[i].data() + ( j * fieldByteSize));
+	        }
+	    }
+
+//	    if(flag_print) {
+//	        for(int k = 0; k < recBufsElements[0].size(); k++) {
+//	            //cout << "roundfunction6 recBufs" << k << " " << recBufsElements[0][k] << endl;
+//	        }
+//	    }
+
+	    //cout << endl;
+
+	//    if(flag_print) {
+	//        for(int k = 0; k < sendBufsElements[0].size(); k++) {
+	//
+	//            //cout << "roundfunction6 recBufs" << k << " " << sendBufsElements[0][k] << endl;
+	//        } }
+
+	    int counter = 0;
+	    // reconstruct my random input values
+	    for (int k = 0; k < numOfInputGates; k++) {
+	        if (circuit.getGates()[k].party == m_partyId) {
+	            for (int i = 0; i < N; i++) {
+	                x1[i] = recBufsElements[i][counter];
+	            }
+	            counter++;
+	            if (!checkConsistency(x1, T)) {
+	                // someone cheated!
+	                return false;
+	            }
+	            // the (random) secret
+	            secret = interpolate(x1);
+
+	            gateValueArr[k] = secret;
+	            if (flag_print) {
+	                cout << "           the secret is " << field->elementToString(secret) << endl;
+	            }
+	        }
+	    }
+
+	    t2 = high_resolution_clock::now();
+	    duration = duration_cast<milliseconds>( t2 - tstart_internal_state ).count();
+	    cout << "inputPreparation::PHASE1 took : " <<duration<<" ms"<<endl;
+
+		break;
+	}
+	}
 
     return true;
 
@@ -1991,7 +2238,7 @@ void ProtocolParty<FieldType>::outputPhase()
     }
 
     //comm->roundfunctionI(sendBufsBytes, recBufBytes,7);
-    roundFunctionSync(sendBufsBytes, recBufBytes,7);
+    roundFunctionASync(sendBufsBytes, recBufBytes,7);
 
 
 
@@ -2029,77 +2276,59 @@ void ProtocolParty<FieldType>::outputPhase()
 
 
 template <class FieldType>
-void ProtocolParty<FieldType>::roundFunctionSync(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int round) {
-
-    //cout<<"in roundFunctionSync "<< round<< endl;
-
-    int numThreads = parties.size();
-    int numPartiesForEachThread;
-
-    if (parties.size() <= numThreads){
-        numThreads = parties.size();
-        numPartiesForEachThread = 1;
-    } else{
-        numPartiesForEachThread = (parties.size() + numThreads - 1)/ numThreads;
-    }
-
-
-    recBufs[m_partyId] = sendBufs[m_partyId];//move(sendBufs[m_partyId-1]);
-    //recieve the data using threads
-    vector<thread> threads(numThreads);
-    for (int t=0; t<numThreads; t++) {
-        if ((t + 1) * numPartiesForEachThread <= parties.size()) {
-            threads[t] = thread(&ProtocolParty::exchangeData, this, ref(sendBufs), ref(recBufs),
-                                t * numPartiesForEachThread, (t + 1) * numPartiesForEachThread);
-        } else {
-            threads[t] = thread(&ProtocolParty::exchangeData, this, ref(sendBufs), ref(recBufs), t * numPartiesForEachThread, parties.size());
-        }
-    }
-    for (int t=0; t<numThreads; t++){
-        threads[t].join();
-    }
-
+void ProtocolParty<FieldType>::roundFunctionASync(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int round)
+{
+	recBufs[m_partyId] = sendBufs[m_partyId];
+	ProtocolParty::exchangeData(sendBufs, recBufs, 0, parties.size());
+	should_read = true;
+	read_from_index = 0;
 }
 
 
 template <class FieldType>
-void ProtocolParty<FieldType>::exchangeData(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int first, int last){
-
-
-    //cout<<"in exchangeData";
-    for (int i=first; i < last; i++) {
-
-        if ((m_partyId) < parties[i]->getID()) {
-
-
-            //send shares to my input bits
-            parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
-            //cout<<"write the data:: my Id = " << m_partyId - 1<< "other ID = "<< parties[i]->getID() <<endl;
-
-
-            //receive shares from the other party and set them in the shares array
-            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
-            //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
-
-        } else{
-
-
-            //receive shares from the other party and set them in the shares array
-            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
-            //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
-
-
-
-            //send shares to my input bits
-            parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
-            //cout<<"write the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID() <<endl;
-
-
-        }
-
+void ProtocolParty<FieldType>::exchangeData(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int first, int last)
+{
+    cout<<"BLAAA exchangeData; Party ID: "<<parties[0]->getID()<<", size: "<<sendBufs[parties[0]->getID()].size()<<", party ID: "<<parties[1]->getID()<<", size: "<<sendBufs[parties[1]->getID()].size()<<endl;
+    if (sendBufs[parties[0]->getID()].size()) {
+    	cout<<"Party ID: "<<parties[0]->getID()<<"; date to send ["<<(int)sendBufs[parties[0]->getID()].data()[0]<<", "<<(int)sendBufs[parties[0]->getID()].data()[sendBufs[parties[0]->getID()].size()-1]<<"]"<<endl;
     }
+    if (sendBufs[parties[1]->getID()].size()) {
+		cout<<"Party ID: "<<parties[1]->getID()<<"; date to send ["<<(int)sendBufs[parties[1]->getID()].data()[0]<<", "<<(int)sendBufs[parties[1]->getID()].data()[sendBufs[parties[1]->getID()].size()-1]<<"]"<<endl;
+	}
 
-
+    for (int i = first; i < last; i++) {
+        //send shares to my input bits
+        parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
+        //cout<<"write the data:: my Id = " << m_partyId - 1<< "other ID = "<< parties[i]->getID() <<en
+//
+//        if ((m_partyId) < parties[i]->getID()) {
+//
+//
+//            //send shares to my input bits
+//            parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
+//            //cout<<"write the data:: my Id = " << m_partyId - 1<< "other ID = "<< parties[i]->getID() <<endl;
+//
+//
+//            //receive shares from the other party and set them in the shares array
+//            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
+//            //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
+//
+//        } else{
+//
+//
+//            //receive shares from the other party and set them in the shares array
+//            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
+//            //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
+//
+//
+//
+//            //send shares to my input bits
+//            parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
+//            //cout<<"write the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID() <<endl;
+//
+//
+//        }
+    }
 }
 
 
@@ -2185,8 +2414,6 @@ template <class FieldType>
 ProtocolParty<FieldType>::~ProtocolParty()
 {
     delete field;
-    io_service.stop();
-    delete timer;
 }
 
 

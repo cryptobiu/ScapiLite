@@ -9,6 +9,7 @@
 #include "NTL/ZZ.h"
 #include <gmp.h>
 #include "Prg.h"
+#include <sstream>
 
 using namespace std;
 using namespace NTL;
@@ -245,13 +246,13 @@ FieldType TemplateField<FieldType>::stringToElement(const string &str) {
  */
 template <class FieldType>
 FieldType TemplateField<FieldType>::Random() {
-    unsigned long b;
+    unsigned long b = 0;
     if(elementSizeInBytes<=4)
     {
         prg.generateKey(128);
         vector<byte> v(32);
         prg.getPRGBytes(v ,0, 32);
-        memccpy(&b, &v, 0, sizeof(b));
+        memccpy(&b, &v[0], 0, sizeof(b)); // todo: tell lior to fix his code
     }
     return GetElement(b);
 }
