@@ -14,7 +14,7 @@
 #include <fstream>
 #include <chrono>
 #include "TemplateField.h"
-#include "MPCCommunication.h"
+#include "MPCCommunicationBF.h"
 #include "Common.h"
 #include "Measurement.h"
 #include <thread>
@@ -55,9 +55,7 @@ private:
     VDM<FieldType> matrix_vand;
     HIM<FieldType> m;
 
-    //Communication* comm;
-    boost::asio::io_service io_service;
-    vector<shared_ptr<ProtocolPartyData>>  parties;
+    vector<shared_ptr<ProtocolPartyDataBF>>  parties;
 
     ArithmeticCircuit circuit;
     vector<FieldType> gateValueArr; // the value of the gate (for my input and output gates)
@@ -326,16 +324,15 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
     timer = new Measurement(*this, subTaskNames, env, assetManager);
 
     s = to_string(m_partyId);
-    circuit.readCircuit(circuitFile.c_str(), env, assetManager);
-    circuit.reArrangeCircuit();
-    M = circuit.getNrOfGates();
-    numOfInputGates = circuit.getNrOfInputGates();
-    numOfOutputGates = circuit.getNrOfOutputGates();
-    myInputs.resize(numOfInputGates);
+//    circuit.readCircuit(circuitFile.c_str(), env, assetManager);
+//    circuit.reArrangeCircuit();
+//    M = circuit.getNrOfGates();
+//    numOfInputGates = circuit.getNrOfInputGates();
+//    numOfOutputGates = circuit.getNrOfOutputGates();
+//    myInputs.resize(numOfInputGates);
     shareIndex = 0;//numOfInputGates;
 
-    parties = MPCCommunication::setCommunication(io_service, m_partyId, N, partiesFileName, env,
-                                                 assetManager);
+    parties = MPCCommunicationBF::setCommunication(m_partyId, N, partiesFileName, env, assetManager);
 
     string tmp = "init times";
     //cout<<"before sending any data"<<endl;
@@ -2186,7 +2183,6 @@ template <class FieldType>
 ProtocolParty<FieldType>::~ProtocolParty()
 {
     delete field;
-    io_service.stop();
     delete timer;
 }
 

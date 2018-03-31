@@ -22,8 +22,10 @@ public class MainActivity extends AppCompatActivity {
         // Example of a call to a native method
         TextView tv = (TextView) findViewById(R.id.sample_text);
         AssetManager mgr = getResources().getAssets();
-        String res = protocolMain(mgr);
-        tv.setText(res);
+        ProtocolActivity protocolActivity = new ProtocolActivity(mgr);
+        protocolActivity.doInBackground();
+//        String res = protocolMain(mgr);
+//        tv.setText(res);
     }
 
     /**
@@ -32,5 +34,5 @@ public class MainActivity extends AppCompatActivity {
      */
     public native String stringFromJNI();
     public native String testLibs();
-    public native String protocolMain(AssetManager assetManager);
+//    public native String protocolMain(AssetManager assetManager);
 }

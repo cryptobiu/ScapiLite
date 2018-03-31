@@ -68,8 +68,8 @@ Java_crypto_cs_biu_scapilite_MainActivity_testLibs(
 }
 
 extern "C"
-JNIEXPORT jstring JNICALL
-Java_crypto_cs_biu_scapilite_MainActivity_protocolMain(
+JNIEXPORT void JNICALL
+Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
         JNIEnv *env,
         jobject obj /* this */,
         jobject assetManager)
@@ -82,13 +82,13 @@ Java_crypto_cs_biu_scapilite_MainActivity_protocolMain(
     argv[1] = "circuitFile";
     argv[2] = "1000000G_1000000MG_333In_50Out_20D_OutputOne3P.txt";
     argv[3] = "fieldType";
-    argv[4] = "ZpMersenne";
+    argv[4] = "GF2_8LookupTable";
     argv[5] = "internalIterationsNumber";
     argv[6] = "5";
     argv[7] = "partyID";
     argv[8] = "0";
     argv[9] = "partiesNumber";
-    argv[10] = "3";
+    argv[10] = "2";
     argv[11] = "partiesFile";
     argv[12] = "parties.conf";
     argv[13] = "inputFile";
@@ -97,7 +97,5 @@ Java_crypto_cs_biu_scapilite_MainActivity_protocolMain(
     argv[16] = "output.txt";
 
     ProtocolParty<GF2_8LookupTable> protocol(17, argv, env, assMgr);
-
-    return env->NewStringUTF("");
 }
 
