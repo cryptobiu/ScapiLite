@@ -111,7 +111,7 @@ npm install ws@2.3.1
   2. you must install ws version 2.3.1 or below (from version 3.0.0 till 5.1.0 [the last version according to this moment], there is a bug which cause the nodejs server to crash. It can be fixed by manipulating the generated javascript: see https://github.com/kripken/emscripten/issues/5971, but it is much easier to install earlier version as I mentioned)
 
 ################################
-Run stage
+Running stage
 ################################
 Open 3 new tabs and in each of them run:
 sudo chroot emscripten /bin/bash
