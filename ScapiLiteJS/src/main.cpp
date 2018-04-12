@@ -55,42 +55,17 @@ int main(int argc, char* argv[])
     string fieldType = parser.getValueByKey(parameters, "fieldType");
 
     
-/*    if(fieldType.compare("ZpMersenne") == 0)
-    {
-        ProtocolParty<ZpMersenneIntElement> protocol(argc, argv);
-
-        auto t1 = high_resolution_clock::now();
-        protocol.run();
-
-        auto t2 = high_resolution_clock::now();
-
-        auto duration = duration_cast<milliseconds>(t2-t1).count();
-        cout << "time in milliseconds for " << times << " runs: " << duration << endl;
-
-        cout << "end main" << '\n';
-    }
-    else */if(fieldType.compare("GF2_8LookupTable") == 0)
-    {
-
-        cout<<"lookup table"<<endl;
-
-        ProtocolParty<GF2_8LookupTable> *protocol = new ProtocolParty<GF2_8LookupTable>(argc, argv);
-//        auto t1 = high_resolution_clock::now();
-
+	/*if(fieldType.compare("ZpMersenne") == 0) {
+        ProtocolParty<ZpMersenneIntElement> *protocol = new ProtocolParty<ZpMersenneIntElement>(argc, argv);
         emscripten_set_main_loop_arg(main_loop, protocol, 60, 0);
 
-//        protocol.run();
-//
-//        auto t2 = high_resolution_clock::now();
-//
-//        auto duration = duration_cast<milliseconds>(t2-t1).count();
-//
-//        cout << "time in milliseconds for " << times << " runs: " << duration << endl;
+        cout << "end main" << '\n';
+    } else */if(fieldType.compare("GF2_8LookupTable") == 0) {
+        ProtocolParty<GF2_8LookupTable> *protocol = new ProtocolParty<GF2_8LookupTable>(argc, argv);
+        emscripten_set_main_loop_arg(main_loop, protocol, 60, 0);
 
         cout << "end main" << '\n';
-    }
-    else
-    {
+    } else {
         cout << "Wrong field type. The options are:\n"
                 "1. ZpMersenne\n"
                 "2. ZpMersenne61\n"

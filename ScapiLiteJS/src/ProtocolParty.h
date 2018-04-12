@@ -659,8 +659,6 @@ bool ProtocolParty<FieldType>::run() {
 				goto exit;
 			}
 
-			cout<<"Party ID: "<<parties[i]->getID()<<"; read "<<read_bytes<<"/"<<(*recBufs)[parties[i]->getID()].size()<<" bytes"<<endl;
-
 			read_from_index++;
 		}
 		should_read = false;
@@ -1340,20 +1338,10 @@ void ProtocolParty<FieldType>::publicReconstruction(vector<FieldType> &myShares,
 		cout << "no buckets" << no_buckets << endl;
 	}
 	FieldType x;
-
 	vector<FieldType> x1(N);
 	vector<FieldType> y1(N);
 	vector<FieldType> y2(N);
-
 	vector<vector<FieldType>> sendBufsElements(N);
-//		vector<vector<byte>> sendBufsBytes(N);
-
-//	vector<vector<byte>> sendBufs2Bytes(N);
-//	vector<vector<FieldType>> sendBufsElements2(N);
-
-//		vector<vector<byte>> recBufsBytes(N);
-//	vector<vector<byte>> recBufs2Bytes(N);
-
 	int fieldByteSize = field->getElementSizeInBytes();
 
 	switch (internal_state) {
@@ -2301,11 +2289,8 @@ void ProtocolParty<FieldType>::processRandoms()
 {
     FieldType r1;
     //vector<string> arr = {};
-    for(int k = (numOfInputGates - 1); k < (M - numOfOutputGates); k++)
-    {
-        if(circuit.getGates()[k].gateType == RANDOM)
-        {
-
+    for(int k = (numOfInputGates - 1); k < (M - numOfOutputGates); k++) {
+        if(circuit.getGates()[k].gateType == RANDOM) {
             r1 = sharingBufTElements[shareIndex];
             shareIndex++;
 
@@ -2389,7 +2374,6 @@ bool ProtocolParty<FieldType>::outputPhase()
 	return true;
 }
 
-
 template <class FieldType>
 void ProtocolParty<FieldType>::roundFunctionASync(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int round)
 {
@@ -2399,56 +2383,14 @@ void ProtocolParty<FieldType>::roundFunctionASync(vector<vector<byte>> &sendBufs
 	read_from_index = 0;
 }
 
-
 template <class FieldType>
 void ProtocolParty<FieldType>::exchangeData(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int first, int last)
 {
-    cout<<"BLAAA exchangeData; Party ID: "<<parties[0]->getID()<<", size: "<<sendBufs[parties[0]->getID()].size()<<", party ID: "<<parties[1]->getID()<<", size: "<<sendBufs[parties[1]->getID()].size()<<endl;
-    if (sendBufs[parties[0]->getID()].size()) {
-    	cout<<"Party ID: "<<parties[0]->getID()<<"; date to send ["<<(int)sendBufs[parties[0]->getID()].data()[0]<<", "<<(int)sendBufs[parties[0]->getID()].data()[sendBufs[parties[0]->getID()].size()-1]<<"]"<<endl;
-    }
-    if (sendBufs[parties[1]->getID()].size()) {
-		cout<<"Party ID: "<<parties[1]->getID()<<"; date to send ["<<(int)sendBufs[parties[1]->getID()].data()[0]<<", "<<(int)sendBufs[parties[1]->getID()].data()[sendBufs[parties[1]->getID()].size()-1]<<"]"<<endl;
-	}
-
     for (int i = first; i < last; i++) {
         //send shares to my input bits
         parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
-        //cout<<"write the data:: my Id = " << m_partyId - 1<< "other ID = "<< parties[i]->getID() <<en
-//
-//        if ((m_partyId) < parties[i]->getID()) {
-//
-//
-//            //send shares to my input bits
-//            parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
-//            //cout<<"write the data:: my Id = " << m_partyId - 1<< "other ID = "<< parties[i]->getID() <<endl;
-//
-//
-//            //receive shares from the other party and set them in the shares array
-//            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
-//            //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
-//
-//        } else{
-//
-//
-//            //receive shares from the other party and set them in the shares array
-//            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
-//            //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
-//
-//
-//
-//            //send shares to my input bits
-//            parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
-//            //cout<<"write the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID() <<endl;
-//
-//
-//        }
     }
 }
-
-
-
-
 
 template <class FieldType>
 void ProtocolParty<FieldType>::roundFunctionSyncBroadcast(vector<byte> &message, vector<vector<byte>> &recBufs)
@@ -2457,87 +2399,15 @@ void ProtocolParty<FieldType>::roundFunctionSyncBroadcast(vector<byte> &message,
 	ProtocolParty::recData(message, recBufs, 0, parties.size());
 	should_read = true;
 	read_from_index = 0;
-	read_to_default_buffer = true;
-
-	/////////////////////////////////
-
-//    //cout<<"in roundFunctionSyncBroadcast "<< endl;
-//
-//    int numThreads = parties.size();
-//    int numPartiesForEachThread;
-//
-//    if (parties.size() <= numThreads){
-//        numThreads = parties.size();
-//        numPartiesForEachThread = 1;
-//    } else{
-//        numPartiesForEachThread = (parties.size() + numThreads - 1)/ numThreads;
-//    }
-//
-//
-//    recBufs[m_partyId] = message;
-//    //recieve the data using threads
-//    vector<thread> threads(numThreads);
-//    for (int t=0; t<numThreads; t++) {
-//        if ((t + 1) * numPartiesForEachThread <= parties.size()) {
-//            threads[t] = thread(&ProtocolParty::recData, this, ref(message), ref(recBufs),
-//                                t * numPartiesForEachThread, (t + 1) * numPartiesForEachThread);
-//        } else {
-//            threads[t] = thread(&ProtocolParty::recData, this, ref(message),  ref(recBufs), t * numPartiesForEachThread, parties.size());
-//        }
-//    }
-//    for (int t=0; t<numThreads; t++){
-//        threads[t].join();
-//    }
-
-}
+	read_to_default_buffer = true;}
 
 template <class FieldType>
 void ProtocolParty<FieldType>::recData(vector<byte> &message, vector<vector<byte>> &recBufs, int first, int last)
 {
-    cout<<"BLAAA recData; Message size: "<<message.size()<<endl;
-    if (message.size()) {
-    	cout<<"date to send ["<<(int)message.data()[0]<<", "<<(int)message.data()[message.size()-1]<<"]"<<endl;
-    }
-
     for (int i = first; i < last; i++) {
         //send shares to my input bits
         parties[i]->getChannel()->write(message.data(), message.size());
-    }
-
-//    //cout<<"in exchangeData";
-//    for (int i=first; i < last; i++) {
-//
-//        if ((m_partyId) < parties[i]->getID()) {
-//
-//
-//            //send shares to my input bits
-//            parties[i]->getChannel()->write(message.data(), message.size());
-//            //cout<<"write the data:: my Id = " << m_partyId - 1<< "other ID = "<< parties[i]->getID() <<endl;
-//
-//
-//            //receive shares from the other party and set them in the shares array
-//            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
-//            //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
-//
-//        } else{
-//
-//
-//            //receive shares from the other party and set them in the shares array
-//            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
-//            //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
-//
-//
-//
-//            //send shares to my input bits
-//            parties[i]->getChannel()->write(message.data(), message.size());
-//            //cout<<"write the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID() <<endl;
-//
-//
-//        }
-//    }
-
-
-}
+    }}
 
 
 template <class FieldType>
