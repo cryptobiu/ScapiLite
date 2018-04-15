@@ -27,7 +27,7 @@ SRCS = main.cpp aes.cpp ArithmeticCircuit.cpp CommBF.cpp Common.cpp ConfigFile.c
 OBJS = $(SRCS:.cpp=.bc)
 
 # define the executable file 
-MAIN = protocol.js
+MAIN = protocol.html
 
 #
 # The following part of the makefile is generic; it can be used to 

@@ -41,20 +41,17 @@ void main_loop(void *protocol_arg) {
  * @param argv[3] = path of inputs file
  * @param argv[4] = path of output file
  * @param argv[5] = path of circuit file
- * @param argv[6] = fieldType
- * @param argv[7] = number of times to run the protocol
+ * @param argv[6] = path of parties file
+ * @param argv[7] = fieldType
+ * @param argv[8] = number of times to run the protocol
  * @return
  */
 int main(int argc, char* argv[])
 {
+//    CmdParser parser;
+//    auto parameters = parser.parseArguments("", argc, argv);;
+    string fieldType = argv[7];//parser.getValueByKey(parameters, "fieldType");
 
-
-    CmdParser parser;
-    auto parameters = parser.parseArguments("", argc, argv);
-    int times = stoi(parser.getValueByKey(parameters, "internalIterationsNumber"));
-    string fieldType = parser.getValueByKey(parameters, "fieldType");
-
-    
 	/*if(fieldType.compare("ZpMersenne") == 0) {
         ProtocolParty<ZpMersenneIntElement> *protocol = new ProtocolParty<ZpMersenneIntElement>(argc, argv);
         emscripten_set_main_loop_arg(main_loop, protocol, 60, 0);

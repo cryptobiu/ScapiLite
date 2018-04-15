@@ -252,7 +252,7 @@ FieldType TemplateField<FieldType>::Random() {
         prg.generateKey(128);
         vector<byte> v(32);
         prg.getPRGBytes(v ,0, 32);
-        memccpy(&b, &v[0], 0, sizeof(b)); // todo: tell lior to fix his code
+        memccpy(&b, &v[0], 0, sizeof(b));
     }
     return GetElement(b);
 }
