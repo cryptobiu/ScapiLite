@@ -26,7 +26,7 @@
 */
 
 
-#include "../../include/infra/ConfigFile.hpp"
+#include "ConfigFile.h"
 #include <fstream>
 
 /******************************/

@@ -50,7 +50,7 @@ public:
     /**
      * Executes the protocol.
      */
-    virtual void run() = 0;
+    virtual bool run() = 0;
     virtual bool hasOffline() = 0;
     virtual void runOffline(){};
     virtual bool hasOnline() = 0;
