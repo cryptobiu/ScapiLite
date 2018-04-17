@@ -1,0 +1,3 @@
+/home/dudi/ScapiLite/src/CMakeFiles/edit_cache.dir
+/home/dudi/ScapiLite/src/CMakeFiles/rebuild_cache.dir
+/home/dudi/ScapiLite/src/CMakeFiles/protocol.dir
