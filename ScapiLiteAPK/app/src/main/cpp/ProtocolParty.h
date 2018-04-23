@@ -55,6 +55,7 @@ private:
     VDM<FieldType> matrix_vand;
     HIM<FieldType> m;
 
+//    boost::asio::io_service io_service;
     vector<shared_ptr<ProtocolPartyDataBF>>  parties;
 
     ArithmeticCircuit circuit;
@@ -332,7 +333,8 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
 //    myInputs.resize(numOfInputGates);
     shareIndex = 0;//numOfInputGates;
 
-    parties = MPCCommunicationBF::setCommunication(m_partyId, N, partiesFileName, env, assetManager);
+    parties = MPCCommunicationBF::setCommunication(m_partyId, N, partiesFileName,
+                                                 env, assetManager);
 
     string tmp = "init times";
     //cout<<"before sending any data"<<endl;
@@ -2184,6 +2186,7 @@ ProtocolParty<FieldType>::~ProtocolParty()
 {
     delete field;
     delete timer;
+//    io_service.stop();
 }
 
 #endif //SCAPILITEAPK_PROTOCOLPARTY_H

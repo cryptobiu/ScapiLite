@@ -4,6 +4,17 @@
 
 #include "CommBF.h"
 
+#include <vector>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <iostream>
+#include <string.h>
+#include <errno.h>
+#include <sys/time.h>
+#include <fcntl.h>
+
 /*****************************************/
 /* CommPartyBF			                */
 /*****************************************/
@@ -29,146 +40,103 @@ size_t CommPartyBF::readWithSizeIntoVector(std::vector<unsigned char> & targetVe
 /*****************************************/
 /* CommPartyTCPSyncedBoostFree           */
 /*****************************************/
-CommPartyTCPSyncedBoostFree::CommPartyTCPSyncedBoostFree(const char * self_addr, const u_int16_t self_port,
-                                                         const char * peer_addr, const u_int16_t peer_port)
+CommPartyTCPSyncedBoostFree::CommPartyTCPSyncedBoostFree(const char * self_addr, const uint16_t self_port,
+                                                         const char * peer_addr, const uint16_t peer_port,
+                                                         bool is_connect_channel)
         : m_self_addr(self_addr), m_peer_addr(peer_addr), m_self_port(self_port), m_peer_port(peer_port)
-        , lstn_fd(-1), srvc_fd(-1), clnt_fd(-1)
+        , fd1(-1), fd2(-1), m_is_connect_channel(is_connect_channel)
 {
+    if (m_is_connect_channel) {
+        std::cout<<"Connecting channel"<<std::endl;
+    } else {
+        std::cout<<"Listening channel"<<std::endl;
+    }
 }
 
 CommPartyTCPSyncedBoostFree::~CommPartyTCPSyncedBoostFree()
 {
-    if(-1 != lstn_fd) { close(lstn_fd); lstn_fd = -1; }
-    if(-1 != srvc_fd) { close(srvc_fd); srvc_fd = -1; }
-    if(-1 != clnt_fd) { close(clnt_fd); clnt_fd = -1; }
+    if(-1 != fd1) { close(fd1); fd1 = -1; }
+    if(-1 != fd2) { close(fd2); fd2 = -1; }
 }
 
-int CommPartyTCPSyncedBoostFree::prep_addr(const char * addr, const u_int16_t port, struct sockaddr_in * sockaddr)
+int CommPartyTCPSyncedBoostFree::prep_addr(const char * addr, const uint16_t port, struct sockaddr_in * sockaddr)
 {
-    if(inet_aton(addr, &sockaddr->sin_addr) == 0)
+    memset(sockaddr, 0, sizeof(*sockaddr));
+    if(inet_pton(AF_INET, addr, &sockaddr->sin_addr) == 0)
         return -1;
     sockaddr->sin_port = htons(port);
     sockaddr->sin_family = AF_INET;
     return 0;
 }
 
-void CommPartyTCPSyncedBoostFree::join(int sleepBetweenAttempts, int timeout)
+void CommPartyTCPSyncedBoostFree::join()
 {
-    //prep address structure
-    struct sockaddr_in self, peer;
-    if(0 != prep_addr(m_self_addr.c_str(), m_self_port, &self))
-    {
-        std::cerr << "join: prep_addr() failed converting self address [" << m_self_addr << "]" << std::endl;
-        throw -1;
-    }
-    if(0 != prep_addr(m_peer_addr.c_str(), m_peer_port, &peer))
-    {
-        std::cerr << "join: prep_addr() failed converting peer address [" << m_self_addr << "]" << std::endl;
-        throw -1;
-    }
+    struct sockaddr_in addr;
 
-    //socket
-    lstn_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if(lstn_fd < 0)
-    {
+    // socket
+    fd1 = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (fd1 < 0) {
         int errcode = errno;
         char errmsg[256];
         std::cerr << "join: listener socket() failed with error [" << errcode << " : " << strerror_r(errcode, errmsg, 256) << "]" <<std::endl;
         throw errcode;
     }
+    fcntl(fd1, F_SETFL, O_NONBLOCK);
 
-    clnt_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if(clnt_fd < 0)
-    {
-        int errcode = errno;
-        char errmsg[256];
-        std::cerr << "join: client socket() failed with error [" << errcode << " : " << strerror_r(errcode, errmsg, 256) << "]" <<std::endl;
-        throw errcode;
-    }
+    if (m_is_connect_channel) {
+        // socket as a client
 
-    //bind
-    if(0 != bind(lstn_fd, (const struct sockaddr *)&self, (socklen_t)sizeof(struct sockaddr_in)))
-    {
-        int errcode = errno;
-        char errmsg[256];
-        std::cerr << "join: listener bind() failed with error [" << errcode << " : " << strerror_r(errcode, errmsg, 256) << "]" <<std::endl;
-        throw errcode;
-    }
-
-    //listen
-    if(0 != listen(lstn_fd, 1))
-    {
-        int errcode = errno;
-        char errmsg[256];
-        std::cerr << "join: listener listen() failed with error [" << errcode << " : " << strerror_r(errcode, errmsg, 256) << "]" <<std::endl;
-        throw errcode;
-    }
-
-    struct timeval master_timeout;
-    master_timeout.tv_usec = 1000 * (u_int32_t)sleepBetweenAttempts;
-    master_timeout.tv_sec = master_timeout.tv_usec / 1000000;
-    master_timeout.tv_usec = master_timeout.tv_usec % 1000000;
-
-    //accept/connect
-    bool clnt_conn = false, srvc_conn = false;
-    int time_consumption = 0;
-    while(!clnt_conn || !srvc_conn)
-    {
-        if(time_consumption > timeout)
-            throw EAGAIN;
-
-        if(!clnt_conn)
-        {
-            clnt_conn = (0 == connect(clnt_fd, (const struct sockaddr *)&peer, (socklen_t)sizeof(struct sockaddr_in)))? true: false;
+        //prep address structure
+        if (0 != prep_addr(m_peer_addr.c_str(), m_peer_port, &addr)) {
+            std::cerr << "join: prep_addr() failed converting address [" << m_peer_addr << "]" << std::endl;
+            throw -1;
         }
 
-        if(!srvc_conn)
-        {
-            fd_set rfds;
-            FD_ZERO(&rfds);
-            FD_SET(lstn_fd, &rfds);
+        std::cout << "connect to " << m_peer_addr.c_str() << ":" << m_peer_port << std::endl;
 
-            struct timeval accept_timeout = master_timeout;
-            if(0 < select(lstn_fd+1, &rfds, NULL, NULL, &accept_timeout) && FD_ISSET(lstn_fd, &rfds))
-            {
-                struct sockaddr addr;
-                socklen_t addrlen;
-                if(0 <= (srvc_fd = accept(lstn_fd, &addr, &addrlen)))
-                {
-                    srvc_conn = true;
-                }
-            }
-            else
-            {
-                time_consumption += sleepBetweenAttempts;
-            }
+        int res = connect(fd1, (struct sockaddr *)&addr, sizeof(addr));
+        if (res == -1 && errno != EINPROGRESS) {
+            int errcode = errno;
+            char errmsg[256];
+            std::cerr << "join: connect() failed with error [" << errcode << " : " << strerror_r(errcode, errmsg, 256) << "]" <<std::endl;
+            throw errcode;
         }
-        else if(!clnt_conn)
-        {
-            struct timeval justa_timeout = master_timeout;
-            select(0, NULL, NULL, NULL, &justa_timeout);
-            time_consumption += sleepBetweenAttempts;
+    } else {
+        // socket as a server
+
+        //prep address structure
+        if (0 != prep_addr(m_self_addr.c_str(), m_self_port, &addr)) {
+            std::cerr << "join: prep_addr() failed converting address [" << m_self_addr << "]" << std::endl;
+            throw -1;
+        }
+
+        if (bind(fd1, (const struct sockaddr *)&addr, (socklen_t)sizeof(struct sockaddr_in)) != 0) {
+            int errcode = errno;
+            char errmsg[256];
+            std::cerr << "join: listener bind() failed with error [" << errcode << " : " << strerror_r(errcode, errmsg, 256) << "]" <<std::endl;
+            throw errcode;
+        }
+
+        if (listen(fd1, 1) != 0) {
+            int errcode = errno;
+            char errmsg[256];
+            std::cerr << "join: listener listen() failed with error [" << errcode << " : " << strerror_r(errcode, errmsg, 256) << "]" <<std::endl;
+            throw errcode;
         }
     }
 }
 
 void CommPartyTCPSyncedBoostFree::write(const unsigned char* data, int size)
 {
-    struct timeval write_timeout;
     int written_size = 0, written_now;
     while(size > written_size)
     {
-        write_timeout.tv_sec = 1;
-        write_timeout.tv_usec = 0;
-
         fd_set wfds;
         FD_ZERO(&wfds);
-        FD_SET(clnt_fd, &wfds);
+        FD_SET(getFD(), &wfds);
 
-        if(0 < select(clnt_fd+1, NULL, &wfds, NULL, &write_timeout) && FD_ISSET(clnt_fd, &wfds))
-        {
-            if(0 < (written_now = ::write(clnt_fd, data + written_size, size - written_size)))
-            {
+        if (0 < select(getFD() + 1, NULL, &wfds, NULL, NULL) && FD_ISSET(getFD(), &wfds)) {
+            if (0 < (written_now = ::write(getFD(), data + written_size, size - written_size))) {
                 written_size += written_now;
             }
         }
@@ -177,25 +145,93 @@ void CommPartyTCPSyncedBoostFree::write(const unsigned char* data, int size)
 
 size_t CommPartyTCPSyncedBoostFree::read(unsigned char* data, int sizeToRead)
 {
-    struct timeval read_timeout;
     int read_size = 0, read_now;
-    while(sizeToRead > read_size)
-    {
-        read_timeout.tv_sec = 1;
-        read_timeout.tv_usec = 0;
+    fd_set rfds;
+    FD_ZERO(&rfds);
+    FD_SET(getFD(), &rfds);
 
-        fd_set rfds;
-        FD_ZERO(&rfds);
-        FD_SET(srvc_fd, &rfds);
-
-        if(0 < select(srvc_fd+1, &rfds, NULL, NULL, &read_timeout) && FD_ISSET(srvc_fd, &rfds))
-        {
-            if(0 < (read_now = ::read(srvc_fd, data + read_size, sizeToRead - read_size)))
-            {
-                read_size += read_now;
-            }
+    if (0 < select(getFD() + 1, &rfds, NULL, NULL, NULL) && FD_ISSET(getFD(), &rfds)) {
+        if (0 < (read_now = ::read(getFD(), data + read_size, sizeToRead - read_size))) {
+            read_size += read_now;
         }
     }
     return (size_t)read_size;
 }
 
+int CommPartyTCPSyncedBoostFree::getFD()
+{
+    if (m_is_connect_channel) {
+        return fd1;
+    } else if (fd2 != -1) {
+        // we already accept a connection
+        return fd2;
+    }
+    return fd1;
+}
+
+bool CommPartyTCPSyncedBoostFree::checkConnectivity(bool *isConnected)
+{
+    bool ret_val = true;
+    fd_set fdr;
+    fd_set fdw;
+    int res;
+
+    FD_ZERO(&fdr);
+    FD_ZERO(&fdw);
+    FD_SET(getFD(), &fdr);
+    FD_SET(getFD(), &fdw);
+
+    *isConnected = false;
+
+    res = select(getFD() + 1, &fdr, &fdw, NULL, NULL);
+    if (res == -1) {
+        ret_val = false;
+        goto exit;
+    }
+
+    if (!m_is_connect_channel && (getFD() == fd1)) {
+        // listen channel and we didn't accept a connection yet
+
+        if (!FD_ISSET(getFD(), &fdr)) {
+            goto exit;
+        }
+
+        fd2 = accept(getFD(), NULL, NULL);
+        if (fd2 == -1) {
+            ret_val = false;
+            goto exit;
+        }
+
+        // NOTE: from now on, calls to getFD() will return fd2
+
+        FD_ZERO(&fdr);
+        FD_ZERO(&fdw);
+        FD_SET(getFD(), &fdr);
+        FD_SET(getFD(), &fdw);
+
+        res = select(getFD() + 1, &fdr, &fdw, NULL, NULL);
+        if (res == -1) {
+            perror("select failed");
+            ret_val = false;
+            goto exit;
+        }
+    }
+
+//	if ((m_is_connect_channel && !FD_ISSET(getFD(), &fdw)) || (!m_is_connect_channel && !FD_ISSET(getFD(), &fdr))) {
+//		goto exit;
+//	}
+
+    if (!FD_ISSET(getFD(), &fdw)) {
+        goto exit;
+    }
+
+    *isConnected = true;
+
+    exit:
+    return ret_val;
+}
+
+uint16_t CommPartyTCPSyncedBoostFree::getSelfPort()
+{
+    return m_self_port;
+}

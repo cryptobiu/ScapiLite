@@ -1,6 +1,30 @@
-//
-// Created by liork on 11/03/18.
-//
+/**
+* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*
+* Copyright (c) 2016 LIBSCAPI (http://crypto.biu.ac.il/SCAPI)
+* This file is part of the SCAPI project.
+* DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
+* to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+* and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*
+* We request that any publication and/or code referring to and/or based on SCAPI contain an appropriate citation to SCAPI, including a reference to
+* http://crypto.biu.ac.il/SCAPI.
+*
+* Libscapi uses several open source libraries. Please see these projects for any further licensing issues.
+* For more information , See https://github.com/cryptobiu/libscapi/blob/master/LICENSE.MD
+*
+* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+*
+*/
+
 
 #include "Comm.h"
 
@@ -43,8 +67,8 @@ size_t CommParty::readWithSizeIntoVector(vector<byte> & targetVector) {
 
 void CommPartyTCPSynced::join(int sleepBetweenAttempts, int timeout) {
     int     totalSleep = 0;
-    bool    isAccepted  = false;
-    bool    isConnected = false;
+    bool    isAccepted  = (role == 1);//false;
+    bool    isConnected = (role == 0); //false;
     // establish connections
     while (!isConnected || !isAccepted) {
         try {
@@ -60,18 +84,17 @@ void CommPartyTCPSynced::join(int sleepBetweenAttempts, int timeout) {
         {
             if (totalSleep > timeout)
             {
-                __android_log_print(ANDROID_LOG_ERROR, APPNAME,
-                                    "Failed to connect after timeout, aborting!");
-                __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "%s", ex.what());
+                cerr << "Failed to connect after timeout, aborting!";
                 throw ex;
             }
-            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Failed to connect. sleeping for %d "
-                    "milliseconds, %s", (sleepBetweenAttempts, ex.what()));
+            cout << "Failed to connect. sleeping for " << sleepBetweenAttempts <<
+                 " milliseconds, " << ex.what() << endl;
             this_thread::sleep_for(chrono::milliseconds(sleepBetweenAttempts));
             totalSleep += sleepBetweenAttempts;
         }
         if (!isAccepted) {
             boost::system::error_code ec;
+            cout << "accepting..." << endl;
             acceptor_.accept(serverSocket, ec);
             isAccepted = true;
         }
@@ -81,13 +104,16 @@ void CommPartyTCPSynced::join(int sleepBetweenAttempts, int timeout) {
 
 void CommPartyTCPSynced::setSocketOptions() {
     boost::asio::ip::tcp::no_delay option(true);
-    serverSocket.set_option(option);
-    clientSocket.set_option(option);
+    if (role != 1)
+        serverSocket.set_option(option);
+    if (role != 0)
+        clientSocket.set_option(option);
+
 }
 
 void CommPartyTCPSynced::write(const byte* data, int size) {
     boost::system::error_code ec;
-    boost::asio::write(clientSocket,
+    boost::asio::write(socketForWrite(),
                        boost::asio::buffer(data, size),
                        boost::asio::transfer_all(), ec);
     if (ec)
@@ -95,7 +121,10 @@ void CommPartyTCPSynced::write(const byte* data, int size) {
 }
 
 CommPartyTCPSynced::~CommPartyTCPSynced() {
-    acceptor_.close();
-    serverSocket.close();
-    clientSocket.close();
+    if (role != 1)
+        acceptor_.close();
+    if (role != 1)
+        serverSocket.close();
+    if (role != 0)
+        clientSocket.close();
 }

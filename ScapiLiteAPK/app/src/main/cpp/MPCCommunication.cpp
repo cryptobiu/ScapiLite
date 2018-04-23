@@ -40,9 +40,9 @@ vector<shared_ptr<ProtocolPartyData>> MPCCommunication::setCommunication
             other = SocketPartyData(boost_ip::address::from_string(ips[i]), ports[i] + id - 1);
             __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "other port %d", ports[i] + id - 1);
 
-            shared_ptr<CommParty> channel = make_shared<CommPartyTCPSynced>(io_service, me, other);
+            shared_ptr<CommParty> channel = make_shared<CommPartyTCPSynced>(io_service, me, other, 1);
             // connect to party one
-            channel->join(500, 5000);
+            channel->join(500, 50000);
             __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "channel established");
 
             parties[counter++] = make_shared<ProtocolPartyData>(i, channel);
@@ -53,9 +53,9 @@ vector<shared_ptr<ProtocolPartyData>> MPCCommunication::setCommunication
             other = SocketPartyData(boost_ip::address::from_string(ips[i]), ports[i] + id);
             __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "other port %d", ports[i] + id);
 
-            shared_ptr<CommParty> channel = make_shared<CommPartyTCPSynced>(io_service, me, other);
+            shared_ptr<CommParty> channel = make_shared<CommPartyTCPSynced>(io_service, me, other, 1);
             // connect to party one
-            channel->join(500, 5000);
+            channel->join(500, 50000);
             __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "channel established");
 
             parties[counter++] = make_shared<ProtocolPartyData>(i, channel);

@@ -3,9 +3,11 @@ package crypto.cs.biu.scapilite;
 import android.content.res.AssetManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     // Used to load the 'native-lib' library on application startup.
     static {
@@ -20,13 +22,22 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Example of a call to a native method
-        TextView tv = (TextView) findViewById(R.id.sample_text);
-        AssetManager mgr = getResources().getAssets();
-        ProtocolActivity protocolActivity = new ProtocolActivity(mgr);
-        protocolActivity.doInBackground();
+//        TextView tv = findViewById(R.id.sample_text);
 //        String res = protocolMain(mgr);
 //        tv.setText(res);
     }
+
+    @Override
+    public void onClick (View view)
+    {
+        EditText et = findViewById(R.id.partyIdtxt);
+        String data = et.getText().toString();
+        AssetManager mgr = getResources().getAssets();
+        ProtocolActivity protocolActivity = new ProtocolActivity(mgr, data);
+        protocolActivity.doInBackground();
+    }
+
+
 
     /**
      * A native method that is implemented by the 'native-lib' native library,

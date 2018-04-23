@@ -43,8 +43,8 @@ vector<shared_ptr<ProtocolPartyDataBF>>MPCCommunicationBF::setCommunication
         "%d: self %s:%d <-> peer %s:%d", i, ips[id].c_str(), self_port, ips[i].c_str(), peer_port);
         shared_ptr<CommPartyBF> channel =
                 make_shared<CommPartyTCPSyncedBoostFree>(ips[id].c_str(), self_port,
-                                                         ips[i].c_str(), peer_port);
-        channel->join(500, 5000);
+                                                         ips[i].c_str(), peer_port, false);
+        channel->join();
         __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Channel established");
         parties[counter++] = make_shared<ProtocolPartyDataBF>(i, channel);
     }
