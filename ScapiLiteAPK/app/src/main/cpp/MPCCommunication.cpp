@@ -49,9 +49,13 @@ vector<shared_ptr<ProtocolPartyData>> MPCCommunication::setCommunication
         }
         else if (i>id) {// This party will be the sender in the protocol
             me = SocketPartyData(boost_ip::address::from_string(ips[id]), ports[id] + i - 1);
-            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "my port %d", ports[id] + i - 1);
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "me %s", me.to_log_string().c_str());
+//            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "my port %d", ports[id] + i - 1);
+//            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "my address %s", ips[id]);
             other = SocketPartyData(boost_ip::address::from_string(ips[i]), ports[i] + id);
-            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "other port %d", ports[i] + id);
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "other %s", other.to_log_string().c_str());
+//            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "other port %d", ports[i] + id);
+//            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "other address %s", ips[i]);
 
             shared_ptr<CommParty> channel = make_shared<CommPartyTCPSynced>(io_service, me, other, 1);
             // connect to party one

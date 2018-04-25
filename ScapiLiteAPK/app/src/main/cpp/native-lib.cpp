@@ -81,11 +81,11 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     char* argv[17];
     argv[0] = (char*)"PerfectSecureMPC";
     argv[1] = (char*)"circuitFile";
-    argv[2] = (char*)"1000000G_1000000MG_333In_50Out_20D_OutputOne3P.txt";
+    argv[2] = (char*)"1000G_1000MG_333In_50Out_10D_OutputOne3P.txt";
     argv[3] = (char*)"fieldType";
     argv[4] = (char*)"GF2_8LookupTable";
     argv[5] = (char*)"internalIterationsNumber";
-    argv[6] = (char*)"5";
+    argv[6] = (char*)"2";
     argv[7] = (char*)"partyID";
     argv[8] = (char*)env->GetStringUTFChars(partyId, 0);
     argv[9] = (char*)"partiesNumber";
@@ -98,5 +98,6 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     argv[16] = (char*)"output.txt";
 
     ProtocolParty<GF2_8LookupTable> protocol(17, argv, env, assMgr);
+    protocol.run();
 }
 

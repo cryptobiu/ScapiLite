@@ -14,7 +14,7 @@
 #include <fstream>
 #include <chrono>
 #include "TemplateField.h"
-#include "MPCCommunicationBF.h"
+#include "MPCCommunication.h"
 #include "Common.h"
 #include "Measurement.h"
 #include <thread>
@@ -55,8 +55,8 @@ private:
     VDM<FieldType> matrix_vand;
     HIM<FieldType> m;
 
-//    boost::asio::io_service io_service;
-    vector<shared_ptr<ProtocolPartyDataBF>>  parties;
+    boost::asio::io_service io_service;
+    vector<shared_ptr<ProtocolPartyData>>  parties;
 
     ArithmeticCircuit circuit;
     vector<FieldType> gateValueArr; // the value of the gate (for my input and output gates)
@@ -325,21 +325,23 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
     timer = new Measurement(*this, subTaskNames, env, assetManager);
 
     s = to_string(m_partyId);
-//    circuit.readCircuit(circuitFile.c_str(), env, assetManager);
-//    circuit.reArrangeCircuit();
-//    M = circuit.getNrOfGates();
-//    numOfInputGates = circuit.getNrOfInputGates();
-//    numOfOutputGates = circuit.getNrOfOutputGates();
-//    myInputs.resize(numOfInputGates);
+    circuit.readCircuit(circuitFile.c_str(), env, assetManager);
+    circuit.reArrangeCircuit();
+    M = circuit.getNrOfGates();
+    numOfInputGates = circuit.getNrOfInputGates();
+    numOfOutputGates = circuit.getNrOfOutputGates();
+    myInputs.resize(numOfInputGates);
     shareIndex = 0;//numOfInputGates;
 
-    parties = MPCCommunicationBF::setCommunication(m_partyId, N, partiesFileName,
+    parties = MPCCommunication::setCommunication(io_service,m_partyId, N, partiesFileName,
                                                  env, assetManager);
 
     string tmp = "init times";
     //cout<<"before sending any data"<<endl;
     byte tmpBytes[20];
     for (int i=0; i<parties.size(); i++){
+
+        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Start handshake with %d", parties[i]->getID());
         if (parties[i]->getID() < m_partyId){
             parties[i]->getChannel()->write(tmp);
             parties[i]->getChannel()->read(tmpBytes, tmp.size());
@@ -2047,7 +2049,6 @@ void ProtocolParty<FieldType>::outputPhase()
 template <class FieldType>
 void ProtocolParty<FieldType>::roundFunctionSync(vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int round) {
 
-    //cout<<"in roundFunctionSync "<< round<< endl;
 
     int numThreads = parties.size();
     int numPartiesForEachThread;
@@ -2083,39 +2084,44 @@ void ProtocolParty<FieldType>::exchangeData(vector<vector<byte>> &sendBufs, vect
 
 
     //cout<<"in exchangeData";
-    for (int i=first; i < last; i++) {
+    for (int i=first; i < last; i++)
+    {
+        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Before writing : %d", m_partyId);
+        //send shares to my input bits
+        parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
+        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Finish writing, prepare for read : "
+                "%d", m_partyId);
+        //receive shares from the other party and set them in the shares array
+        parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
+        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Finish reading : %d", m_partyId);
 
-        if ((m_partyId) < parties[i]->getID()) {
-
-
+        /*
+        if ((m_partyId) < parties[i]->getID())
+        {
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Before writing : %d", m_partyId);
             //send shares to my input bits
             parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
-            //cout<<"write the data:: my Id = " << m_partyId - 1<< "other ID = "<< parties[i]->getID() <<endl;
-
-
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Finish writing, prepare for read : "
+                    "%d", m_partyId);
             //receive shares from the other party and set them in the shares array
             parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
-            //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
-
-        } else{
-
-
-            //receive shares from the other party and set them in the shares array
-            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
-            //cout<<"read the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID()<<endl;
-
-
-
-            //send shares to my input bits
-            parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
-            //cout<<"write the data:: my Id = " << m_partyId-1<< "other ID = "<< parties[i]->getID() <<endl;
-
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Finish reading : %d", m_partyId);
 
         }
+        else
+        {
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Before reading : %d", m_partyId);
+            //receive shares from the other party and set them in the shares array
+            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Finish reading, prepare for write : "
+                    "%d", m_partyId);
+            //send shares to my input bits
+            parties[i]->getChannel()->write(sendBufs[parties[i]->getID()].data(), sendBufs[parties[i]->getID()].size());
+            __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Finish writing : %d", m_partyId);
+        }*/
 
     }
-
-
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Finish exchange data");
 }
 
 
@@ -2161,32 +2167,35 @@ void ProtocolParty<FieldType>::recData(vector<byte> &message, vector<vector<byte
 
     for (int i=first; i < last; i++)
     {
-        if ((m_partyId) < parties[i]->getID())
-        {
-
-            //send shares to my input bits
-            parties[i]->getChannel()->write(message.data(), message.size());
-
-            //receive shares from the other party and set them in the shares array
-            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
-        } else
-        {
-
-            //receive shares from the other party and set them in the shares array
-            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
-
-            //send shares to my input bits
-            parties[i]->getChannel()->write(message.data(), message.size());
-        }
+//        if ((m_partyId) < parties[i]->getID())
+//        {
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Before writing : %d", m_partyId);
+        //send shares to my input bits
+        parties[i]->getChannel()->write(message.data(), message.size());
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Finish writing, prepare for read : "
+            "%d", m_partyId);
+        //receive shares from the other party and set them in the shares array
+        parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Finish reading : %d", m_partyId);
+//        } else
+//        {
+//
+//            //receive shares from the other party and set them in the shares array
+//            parties[i]->getChannel()->read(recBufs[parties[i]->getID()].data(), recBufs[parties[i]->getID()].size());
+//
+//            //send shares to my input bits
+//            parties[i]->getChannel()->write(message.data(), message.size());
+//        }
     }
+    __android_log_print(ANDROID_LOG_VERBOSE, APPNAME, "Finish rec data");
 }
 
 template <class FieldType>
 ProtocolParty<FieldType>::~ProtocolParty()
 {
     delete field;
-    delete timer;
-//    io_service.stop();
+//    delete timer;
+    io_service.stop();
 }
 
 #endif //SCAPILITEAPK_PROTOCOLPARTY_H
