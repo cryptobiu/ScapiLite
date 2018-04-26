@@ -73,7 +73,7 @@ private:
     string s;
 
 public:
-    ProtocolParty(int argc, char* argv [], JNIEnv *env, AAssetManager *assetManager);
+    ProtocolParty(int argc, char* argv [], JNIEnv *env, AAssetManager *assetManager, char* filesPath);
     void split(const string &s, char delim, vector<string> &elems);
     vector<string> split(const string &s, char delim);
 
@@ -288,11 +288,12 @@ public:
 
 template <class FieldType>
 ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
-                                        JNIEnv *env, AAssetManager *assetManager)
+                                        JNIEnv *env, AAssetManager *assetManager, char* filesPath)
         : Protocol ("PerfectSecureMPC", argc, argv)
 {
 
     string circuitFile = this->getParser().getValueByKey(arguments, "circuitFile");
+    string path(filesPath);
     this->times = stoi(this->getParser().getValueByKey(arguments, "internalIterationsNumber"));
     string fieldType = this->getParser().getValueByKey(arguments, "fieldType");
     m_partyId = stoi(this->getParser().getValueByKey(arguments, "partyID"));
@@ -325,7 +326,7 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
     timer = new Measurement(*this, subTaskNames, env, assetManager);
 
     s = to_string(m_partyId);
-    circuit.readCircuit(circuitFile.c_str(), env, assetManager);
+    circuit.readCircuit((path + "/" + circuitFile).c_str(), env, assetManager);
     circuit.reArrangeCircuit();
     M = circuit.getNrOfGates();
     numOfInputGates = circuit.getNrOfInputGates();
@@ -333,8 +334,8 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
     myInputs.resize(numOfInputGates);
     shareIndex = 0;//numOfInputGates;
 
-    parties = MPCCommunication::setCommunication(io_service,m_partyId, N, partiesFileName,
-                                                 env, assetManager);
+    parties = MPCCommunication::setCommunication(io_service,m_partyId, N,
+                                                 path + "/" + partiesFileName, env, assetManager);
 
     string tmp = "init times";
     //cout<<"before sending any data"<<endl;

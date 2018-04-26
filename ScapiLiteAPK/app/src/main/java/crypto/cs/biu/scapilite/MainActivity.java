@@ -67,8 +67,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // download parties file
         downloadData();
 
-//        ProtocolActivity protocolActivity = new ProtocolActivity(mgr, data);
-//        protocolActivity.doInBackground();
+        ProtocolActivity protocolActivity = new ProtocolActivity(mgr, data);
+        protocolActivity.doInBackground();
     }
 
 
@@ -119,7 +119,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         //set download destination
 
-        request.setDestinationInExternalFilesDir(this, Environment.getExternalStorageDirectory().getAbsolutePath(),
+        request.setDestinationInExternalFilesDir(this,
+                Environment.getExternalStorageDirectory().getAbsolutePath(),
                 "parties.conf");
 
         //Enqueue download and save into referenceId
