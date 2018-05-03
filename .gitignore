@@ -13,8 +13,6 @@ src/primitives/Makefile
 src/primitives/CMakeCache.txt
 src/primitives/CMakeFiles/*
 src/primitives/cmake_install.cmake
-*.so
-*.a
 buildAndroid/
 buildRaspberry/
 buildUbuntu/
