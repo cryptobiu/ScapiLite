@@ -42,30 +42,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String data = et.getText().toString();
         AssetManager mgr = getResources().getAssets();
         final String myIpAddress = getIpAddress();
-        RequestQueue queue = Volley.newRequestQueue(this);
-        String url = "http://35.171.69.162/polls/prepareOnline/" + myIpAddress;
-
-
-        // Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        // Display the first 500 characters of the response string.
-                        Log.println(Log.ERROR, "Error", response);
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.println(Log.ERROR, "Error", "That didn't work!");
-            }
-        });
-
-        // Add the request to the RequestQueue.
-        queue.add(stringRequest);
-
-        // download parties file
-        downloadData();
+//        RequestQueue queue = Volley.newRequestQueue(this);
+//        String url = "http://35.171.69.162/polls/prepareOnline/" + myIpAddress;
+//
+//
+//        // Request a string response from the provided URL.
+//        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+//                new Response.Listener<String>() {
+//                    @Override
+//                    public void onResponse(String response) {
+//                        // Display the first 500 characters of the response string.
+//                        Log.println(Log.ERROR, "Error", response);
+//                    }
+//                }, new Response.ErrorListener() {
+//            @Override
+//            public void onErrorResponse(VolleyError error) {
+//                Log.println(Log.ERROR, "Error", "That didn't work!");
+//            }
+//        });
+//
+//        // Add the request to the RequestQueue.
+//        queue.add(stringRequest);
+//
+//        // download parties file
+//        downloadData();
 
         ProtocolActivity protocolActivity = new ProtocolActivity(mgr, data);
         protocolActivity.doInBackground();

@@ -82,7 +82,7 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     char* argv[17];
     argv[0] = (char*)"PerfectSecureMPC";
     argv[1] = (char*)"circuitFile";
-    argv[2] = (char*)"1000G_1000MG_333In_50Out_10D_OutputOne3P";
+    argv[2] = (char*)"100000G_100000MG_333In_50Out_20D_OutputOne3P.txt";
     argv[3] = (char*)"fieldType";
     argv[4] = (char*)"GF2_8LookupTable";
     argv[5] = (char*)"internalIterationsNumber";

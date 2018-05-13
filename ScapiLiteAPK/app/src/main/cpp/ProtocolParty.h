@@ -326,7 +326,8 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
     timer = new Measurement(*this, subTaskNames, env, assetManager);
 
     s = to_string(m_partyId);
-    circuit.readCircuit((path + "/" + circuitFile).c_str(), env, assetManager);
+//    circuit.readCircuit((path + "/" + circuitFile).c_str(), env, assetManager);
+    circuit.readCircuit(circuitFile.c_str(), env, assetManager);
     circuit.reArrangeCircuit();
     M = circuit.getNrOfGates();
     numOfInputGates = circuit.getNrOfInputGates();
@@ -334,8 +335,10 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
     myInputs.resize(numOfInputGates);
     shareIndex = 0;//numOfInputGates;
 
+//    parties = MPCCommunication::setCommunication(io_service,m_partyId, N,
+//                                                 path + "/" + partiesFileName, env, assetManager);
     parties = MPCCommunication::setCommunication(io_service,m_partyId, N,
-                                                 path + "/" + partiesFileName, env, assetManager);
+                                                 partiesFileName, env, assetManager);
 
     string tmp = "init times";
     //cout<<"before sending any data"<<endl;
