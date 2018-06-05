@@ -20,7 +20,7 @@ android {
         abi {
             enable true
             reset()
-            include  'armeabi-v7a', 'armeabi-v8a, x86_64' //select ABIs to build APKs for
+            include 'armeabi-v8a, x86_64' //select ABIs to build APKs for
             universalApk true //generate an additional APK that contains all the ABIs
         }
     }

@@ -31,7 +31,7 @@ using namespace std::chrono;
 
 template <class FieldType>
 class ProtocolParty : public Protocol, public HonestMajority, public MultiParty {
-private:
+protected:
     /**
      * N - number of parties
      * M - number of gates
@@ -73,7 +73,8 @@ private:
     string s;
 
 public:
-    ProtocolParty(int argc, char* argv [], JNIEnv *env, AAssetManager *assetManager, char* filesPath);
+    ProtocolParty(int argc, char* argv [], bool commOn,
+                  JNIEnv *env, AAssetManager *assetManager, char* filesPath);
     void split(const string &s, char delim, vector<string> &elems);
     vector<string> split(const string &s, char delim);
 
@@ -287,7 +288,7 @@ public:
 
 
 template <class FieldType>
-ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
+ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [], bool commOn,
                                         JNIEnv *env, AAssetManager *assetManager, char* filesPath)
         : Protocol ("PerfectSecureMPC", argc, argv)
 {
@@ -335,11 +336,13 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
     myInputs.resize(numOfInputGates);
     shareIndex = 0;//numOfInputGates;
 
+    if(commOn)
+    {
 //    parties = MPCCommunication::setCommunication(io_service,m_partyId, N,
 //                                                 path + "/" + partiesFileName, env, assetManager);
-    parties = MPCCommunication::setCommunication(io_service,m_partyId, N,
-                                                 partiesFileName, env, assetManager);
-
+        parties = MPCCommunication::setCommunication(io_service, m_partyId, N,
+                                                     partiesFileName, env, assetManager);
+    }
     string tmp = "init times";
     //cout<<"before sending any data"<<endl;
     byte tmpBytes[20];

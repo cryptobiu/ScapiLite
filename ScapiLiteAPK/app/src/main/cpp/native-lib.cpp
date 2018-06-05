@@ -10,6 +10,7 @@
 #include "ConfigFile.h"
 #include "GF2_8LookupTable.h"
 #include "ProtocolParty.h"
+#include "psmpc_ac_gf28lt.h"
 
 using namespace std;
 using namespace boost;
@@ -101,7 +102,10 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     jboolean isCopy = (jboolean) false;
     const char * path = env->GetStringUTFChars(filesPath, &isCopy);
 
-    ProtocolParty<GF2_8LookupTable> protocol(17, argv, env, assMgr, (char*)path);
-    protocol.run();
+    //ProtocolParty<GF2_8LookupTable> protocol(17, argv, false, env, assMgr, (char*)path);
+    //protocol.run();
+
+    psmpc_ac_gf28lt ps(argc, argv, &args);
+    ps.run_ac_protocol(id ,parties, partiesFile.c_str(), 180);
 }
 
