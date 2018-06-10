@@ -22,6 +22,7 @@ buildUbuntu/
 ScapiLiteAPK/.gradle/*
 ScapiLiteAPK/build/
 ScapiLiteAPK/app/CMakeFiles
+ScapiLiteAPK/app/src/main/cpp/CMakeFiles/
 ScapiLiteAPK/app/.externalNativeBuild/*
 ScapiLiteAPK/app/app.iml
 
