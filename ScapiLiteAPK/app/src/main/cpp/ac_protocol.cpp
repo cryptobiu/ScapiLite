@@ -9,8 +9,6 @@
 #include <vector>
 #include <list>
 
-#ifdef __ANDROID__
-
 #include <pthread.h>
 
 #include <android/log.h>
@@ -22,28 +20,16 @@
 #define lc_info(...) __android_log_print(ANDROID_LOG_INFO,m_logcat.c_str(),__VA_ARGS__)
 #define lc_debug(...) __android_log_print(ANDROID_LOG_DEBUG,m_logcat.c_str(),__VA_ARGS__)
 
-#else
+#include <event2/event.h>
 
-#include <log4cpp/Category.hh>
-
-#define lc_fatal(...) log4cpp::Category::getInstance(m_logcat).error(__VA_ARGS__)
-#define lc_error(...) log4cpp::Category::getInstance(m_logcat).error(__VA_ARGS__)
-#define lc_warn(...) log4cpp::Category::getInstance(m_logcat).warn(__VA_ARGS__)
-#define lc_notice(...) log4cpp::Category::getInstance(m_logcat).notice(__VA_ARGS__)
-#define lc_info(...) log4cpp::Category::getInstance(m_logcat).info(__VA_ARGS__)
-#define lc_debug(...) log4cpp::Category::getInstance(m_logcat).debug(__VA_ARGS__)
-
-#endif
-
-#include "lfq.h"
 #include "comm_client_cb_api.h"
-#include "comm_client_factory.h"
 #include "ac_protocol.h"
 #include "comm_client.h"
+#include "cct_proxy_client.h"
 
-ac_protocol::ac_protocol(comm_client_factory::client_type_t cc_type, comm_client::cc_args_t * cc_args)
+ac_protocol::ac_protocol(comm_client::cc_args_t * cc_args)
 : m_logcat(cc_args->logcat), m_id(-1), m_parties(0), m_run_flag(false)
-, m_cc( comm_client_factory::create_comm_client(cc_type, cc_args))
+, m_cc(new cct_proxy_client(cc_args))
 {
  	int errcode = 0;
  	if(0 != (errcode = pthread_mutex_init(&m_q_lock, NULL)))

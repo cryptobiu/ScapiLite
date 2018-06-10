@@ -5,9 +5,12 @@
 #ifndef SCAPILITEAPK_MERSENNE_H
 #define SCAPILITEAPK_MERSENNE_H
 
-#include "NTL/ZZ_p.h"
-#include "NTL/ZZ.h"
 #include <gmp.h>
+#include <sstream>
+
+#include "NTL/ZZ.h"
+#include "NTL/ZZ_p.h"
+
 #include "Prg.h"
 
 using namespace std;

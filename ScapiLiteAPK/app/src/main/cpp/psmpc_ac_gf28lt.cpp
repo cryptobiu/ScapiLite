@@ -2,18 +2,25 @@
 // Created by liork on 5/27/18.
 //
 
-#include <log4cpp/Category.hh>
+#include <list>
+#include <android/log.h>
 
-#include <comm_client_factory.h>
+#define lc_fatal(...) __android_log_print(ANDROID_LOG_FATAL,m_logcat.c_str(),__VA_ARGS__)
+#define lc_error(...) __android_log_print(ANDROID_LOG_ERROR,m_logcat.c_str(),__VA_ARGS__)
+#define lc_warn(...) __android_log_print(ANDROID_LOG_WARN,m_logcat.c_str(),__VA_ARGS__)
+#define lc_notice(...) __android_log_print(ANDROID_LOG_INFO,m_logcat.c_str(),__VA_ARGS__)
+#define lc_info(...) __android_log_print(ANDROID_LOG_INFO,m_logcat.c_str(),__VA_ARGS__)
+#define lc_debug(...) __android_log_print(ANDROID_LOG_DEBUG,m_logcat.c_str(),__VA_ARGS__)
+
+
 #include "comm_client.h"
 #include "psmpc_ac_gf28lt.h"
 
-#define LC log4cpp::Category::getInstance(m_logcat)
 
 psmpc_ac_gf28lt::psmpc_ac_gf28lt(int argc, char* argv [],  comm_client::cc_args_t * args,
                                  JNIEnv *env, AAssetManager *assetManager, char* filesPath)
 : ProtocolParty<GF28LT>(argc, argv, false, env, assetManager, filesPath),
-  ac_protocol(comm_client_factory::cc_tcp_proxy, args), m_no_buckets(-1)
+  ac_protocol(args), m_no_buckets(-1)
 {
 
 }
@@ -27,22 +34,22 @@ void psmpc_ac_gf28lt::handle_party_conn(const size_t party_id, const bool connec
     {
         if(!peer.m_connected)
         {
-            LC.notice("%s: party %lu is now connected.", __FUNCTION__, party_id);
+            lc_notice("%s: party %lu is now connected.", __FUNCTION__, party_id);
             peer.m_connected = true;
         }
         else
-            LC.warn("%s: party %lu unexpectedly again connected.", __FUNCTION__, party_id);
+            lc_warn("%s: party %lu unexpectedly again connected.", __FUNCTION__, party_id);
     }
     else
     {
     	if(ps_done != peer.m_current_state)
     	{
-            LC.error("%s: party id %lu premature disconnection while in state %lu; Perfect Secure failed.", __FUNCTION__, party_id, (size_t)peer.m_current_state);
+            lc_error("%s: party id %lu premature disconnection while in state %lu; Perfect Secure failed.", __FUNCTION__, party_id, (size_t)peer.m_current_state);
             m_run_flag = false;
     	}
         else
         {
-            LC.notice("%s: party %lu is now disconnected.", __FUNCTION__, party_id);
+            lc_notice("%s: party %lu is now disconnected.", __FUNCTION__, party_id);
         }
     }
 }
@@ -115,7 +122,7 @@ int psmpc_ac_gf28lt::output_phase_comm(const size_t peer_id, size_t &to_send, si
         }
         else
         {
-            LC.error("%s: gate %d shold be an output gate", __FUNCTION__, k);
+            lc_error("%s: gate %d shold be an output gate", __FUNCTION__, k);
             return -1;
         }
     }
@@ -156,7 +163,7 @@ bool psmpc_ac_gf28lt::party_run_around(const size_t party_id)
         case ps_done:
             return on_round_send_and_recv(peer);
         default:
-            LC.error("%s: invalid party state value %u.", __FUNCTION__, peer.m_current_state);
+            lc_error("%s: invalid party state value %u.", __FUNCTION__, peer.m_current_state);
             exit(__LINE__);
     }
 
@@ -169,13 +176,13 @@ bool psmpc_ac_gf28lt::round_up()
     if(!all_on_the_same_page(current_state))
         return false;
     else
-        LC.notice("%s: All parties are on the same state %u", __FUNCTION__, current_state);
+        lc_notice("%s: All parties are on the same state %u", __FUNCTION__, current_state);
     m_parties_state[m_id].rnd_data_2recv = m_parties_state[m_id].rnd_data_2send = 0;
 
     switch(current_state)
     {
         case ps_nil:
-            LC.error("%s: Invalid state nil", __FUNCTION__);
+            lc_error("%s: Invalid state nil", __FUNCTION__);
             return false;
         case ps_rsfi1:
             return rsfi1_2_rsfi2();
@@ -194,7 +201,7 @@ bool psmpc_ac_gf28lt::round_up()
         case ps_outpt:
             return outpt_2_done();
         case ps_done:
-            LC.notice("%s: Protocol done; success.",__FUNCTION__);
+            lc_notice("%s: Protocol done; success.",__FUNCTION__);
             return (m_run_flag = false);
     }
 
@@ -256,19 +263,19 @@ bool psmpc_ac_gf28lt::recv_aux(party_t &peer, const size_t required_elements)
 
 bool psmpc_ac_gf28lt::on_round_send_and_recv(party_t &peer)
 {
-    LC.debug("%s: peer %lu current state %lu; 2snd %lu; 2rcv %lu;",
+    lc_debug("%s: peer %lu current state %lu; 2snd %lu; 2rcv %lu;",
              __FUNCTION__, peer.m_id, peer.m_current_state, peer.rnd_data_2send, peer.rnd_data_2recv);
     if(peer.rnd_data_sent < peer.rnd_data_2send)
     {
         if (peer.rnd_data_2send > peer.m_aux.size())
         {
-            LC.fatal("%s: peer id %lu not enough data in aux buffer %lu/%lu"
+            lc_fatal("%s: peer id %lu not enough data in aux buffer %lu/%lu"
                      ,__FUNCTION__, peer.m_id, peer.m_aux.size(), peer.rnd_data_2send);
             exit(__LINE__);
         }
         if (!send_aux(peer))
         {
-            LC.error("%s: failed sending data to party %lu; Perfect Secure failed.", __FUNCTION__, peer.m_id);
+            lc_error("%s: failed sending data to party %lu; Perfect Secure failed.", __FUNCTION__, peer.m_id);
             return (m_run_flag = false);
         }
         peer.m_aux.clear();
@@ -349,7 +356,7 @@ bool psmpc_ac_gf28lt::rsfi2_2_prep1()
         // Check that x1 is t-consistent and x2 is 2t-consistent and secret is the same
         if(!checkConsistency(x1,T))
         {
-            LC.error("%s: cheat check failed.", __FUNCTION__);
+            lc_error("%s: cheat check failed.", __FUNCTION__);
             return (m_run_flag = false);
         }
     }
@@ -494,7 +501,7 @@ bool psmpc_ac_gf28lt::prep2_2_inprp()
         // Check that x1 is t-consistent and x2 is 2t-consistent and secret is the same
         if(!checkConsistency(x1,T) || !checkConsistency(x2,2*T) || (interpolate(x1)) != (interpolate(x2)))
         {
-            LC.error("%s: cheat check failed.", __FUNCTION__);
+            lc_error("%s: cheat check failed.", __FUNCTION__);
             return (m_run_flag = false);
         }
     }
@@ -537,7 +544,7 @@ bool psmpc_ac_gf28lt::inprp_2_inadj1()
 
             if (!checkConsistency(x1, T))
             {
-                LC.error("%s: cheat check failed.", __FUNCTION__);
+                lc_error("%s: cheat check failed.", __FUNCTION__);
                 return (m_run_flag = false);
             }
             // the (random) secret
@@ -650,7 +657,7 @@ bool psmpc_ac_gf28lt::inadj2_2_outpt()
         {
             if(temp1 != m_parties_state[i].m_aux[k])
             {
-                LC.error("%s: elem: %lu mismatch of party %lu", __FUNCTION__, k, i);
+                lc_error("%s: elem: %lu mismatch of party %lu", __FUNCTION__, k, i);
                 return false;
             }
 
@@ -690,7 +697,7 @@ bool psmpc_ac_gf28lt::inadj2_2_outpt()
         }
         else
         {
-            LC.error("%s: gate %lu should be output; Perfect Secure failed.", __FUNCTION__, k);
+            lc_error("%s: gate %lu should be output; Perfect Secure failed.", __FUNCTION__, k);
             return (m_run_flag = false);
         }
     }
@@ -700,7 +707,7 @@ bool psmpc_ac_gf28lt::inadj2_2_outpt()
         party_t &peer(m_parties_state[i]);
         if(0 != output_phase_comm(peer.m_id, peer.rnd_data_2send, peer.rnd_data_2recv))
         {
-            LC.error("%s: failed retrieve outputs comm requirements to party %lu; Perfect Secure failed."
+            lc_error("%s: failed retrieve outputs comm requirements to party %lu; Perfect Secure failed."
                     , __FUNCTION__, peer.m_id);
             return (m_run_flag = false);
         }
@@ -726,7 +733,7 @@ bool psmpc_ac_gf28lt::outpt_2_done()
             // my output: reconstruct received shares
             if (!checkConsistency(x1, T))
             {
-                LC.error("%s: cheat check failed.", __FUNCTION__);
+                lc_error("%s: cheat check failed.", __FUNCTION__);
                 return (m_run_flag = false);
             }
         }
@@ -749,11 +756,11 @@ void psmpc_ac_gf28lt::print_data() const
 {
     for(size_t i = 0; i< m_parties; ++i)
     {
-        LC.debug("%s party %lu aux size %lu", __FUNCTION__,i, m_parties_state[i].m_aux.size());
+        lc_debug("%s party %lu aux size %lu", __FUNCTION__,i, m_parties_state[i].m_aux.size());
         for (size_t j = 0; j<m_parties_state[i].m_aux.size(); ++j)
         {
             string ___element = field->elementToString(m_parties_state[i].m_aux[j]);
-            LC.debug("%s party %lu aux[%lu]=%s", __FUNCTION__, i, j, ___element.c_str());
+            lc_debug("%s party %lu aux[%lu]=%s", __FUNCTION__, i, j, ___element.c_str());
         }
     }
 

@@ -11,6 +11,7 @@
 #include "GF2_8LookupTable.h"
 #include "ProtocolParty.h"
 #include "psmpc_ac_gf28lt.h"
+#include "comm_client.h"
 
 using namespace std;
 using namespace boost;
@@ -80,10 +81,10 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     AAssetManager *assMgr = AAssetManager_fromJava(env, assetManager);
 
 
-    char* argv[17];
+    char* argv[18];
     argv[0] = (char*)"PerfectSecureMPC";
     argv[1] = (char*)"circuitFile";
-    argv[2] = (char*)"100000G_100000MG_333In_50Out_20D_OutputOne3P.txt";
+    argv[2] = (char*)"ArythmeticVarianceFor3InputsAnd3Parties.txt";
     argv[3] = (char*)"fieldType";
     argv[4] = (char*)"GF2_8LookupTable";
     argv[5] = (char*)"internalIterationsNumber";
@@ -95,9 +96,10 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     argv[11] = (char*)"partiesFile";
     argv[12] = (char*)"parties.conf";
     argv[13] = (char*)"inputFile";
-    argv[14] = (char*)"inputs333.txt";
+    argv[14] = (char*)"inputsSalary0.txt";
     argv[15] = (char*)"outputFile";
     argv[16] = (char*)"output.txt";
+    argv[17] = NULL;
 
     jboolean isCopy = (jboolean) false;
     const char * path = env->GetStringUTFChars(filesPath, &isCopy);
@@ -105,7 +107,23 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     //ProtocolParty<GF2_8LookupTable> protocol(17, argv, false, env, assMgr, (char*)path);
     //protocol.run();
 
-    psmpc_ac_gf28lt ps(argc, argv, &args);
-    ps.run_ac_protocol(id ,parties, partiesFile.c_str(), 180);
+    comm_client::cc_args_t cc_args;
+    cc_args.logcat = "psmpc";
+    cc_args.proxy_addr = "34.202.236.33";
+    cc_args.proxy_port = 9000;
+
+    stringstream strValue1;
+    strValue1 << partyId;
+
+    int partyIdVal;
+
+    stringstream strValue2;
+    strValue2 << partyId;
+
+    int partyNumsId;
+    strValue2 >> partyNumsId;
+
+    psmpc_ac_gf28lt ps(17, argv, &cc_args, env, assMgr, (char*)path);
+    ps.run_ac_protocol(stoi(argv[8]) ,stoi(argv[10]), argv[12], 180);
 }
 
