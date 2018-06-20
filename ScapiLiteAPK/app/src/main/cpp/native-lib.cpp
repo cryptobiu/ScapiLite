@@ -104,13 +104,31 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     jboolean isCopy = (jboolean) false;
     const char * path = env->GetStringUTFChars(filesPath, &isCopy);
 
-    //ProtocolParty<GF2_8LookupTable> protocol(17, argv, false, env, assMgr, (char*)path);
-    //protocol.run();
+    AAsset* file = AAssetManager_open(assMgr, argv[12], AASSET_MODE_BUFFER);
+    off_t fileLength = AAsset_getLength(file);
+    char* fileContent = new char[fileLength+1];
+
+    // Read your file
+    AAsset_read(file, fileContent, (size_t)fileLength);
+    fileContent[fileLength] = '\0';
+    stringstream partiesData(fileContent);
+
+    string proxySocket;
+    int counter = 0;
+    while(partiesData >> proxySocket)
+    {
+        if(counter == stoi(argv[8]))
+            break;
+        counter++;
+    }
+
+    size_t delimIdx = proxySocket.find(":");
 
     comm_client::cc_args_t cc_args;
     cc_args.logcat = "psmpc";
-    cc_args.proxy_addr = "34.202.236.33";
-    cc_args.proxy_port = 9000;
+    cc_args.proxy_addr = proxySocket.substr(0, delimIdx);
+    cc_args.proxy_port = (u_int16_t)
+            stoi(proxySocket.substr(delimIdx + 1, proxySocket.size() - delimIdx));
 
     stringstream strValue1;
     strValue1 << partyId;
@@ -124,6 +142,6 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     strValue2 >> partyNumsId;
 
     psmpc_ac_gf28lt ps(17, argv, &cc_args, env, assMgr, (char*)path);
-    ps.run_ac_protocol(stoi(argv[8]) ,stoi(argv[10]), argv[12], 180);
+    ps.run_ac_protocol((size_t)stoi(argv[8]), (size_t)stoi(argv[10]), argv[12], 180);
 }
 

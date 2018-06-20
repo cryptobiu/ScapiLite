@@ -7,25 +7,41 @@
     tools:context="crypto.cs.biu.scapilite.MainActivity"
     tools:layout_editor_absoluteY="81dp">
 
-    <Button
-        android:id="@+id/runButton"
+    <TextView
+        android:id="@+id/headerTv"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="21dp"
-        android:onClick="onClick"
-        android:text="Run protocol"
-        app:layout_constraintStart_toStartOf="@+id/partyIdtxt"
-        app:layout_constraintTop_toBottomOf="@+id/partyIdtxt" />
-
-    <EditText
-        android:id="@+id/partyIdtxt"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="45dp"
-        android:layout_marginTop="85dp"
-        android:ems="10"
-        android:inputType="textPersonName"
+        android:layout_marginBottom="100dp"
+        android:text="@string/header"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toTopOf="@+id/registerBtn"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/imageView" />
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="122dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="54dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginTop="6dp"
+        android:contentDescription="@string/main_logo"
+        app:layout_constraintBottom_toTopOf="@+id/headerTv"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/original_biu" />
+
+    <Button
+        android:id="@+id/registerBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="235dp"
+        android:layout_marginStart="48dp"
+        android:onClick="onClick"
+        android:text="@string/registerPoll"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/headerTv" />
 
 </android.support.constraint.ConstraintLayout>

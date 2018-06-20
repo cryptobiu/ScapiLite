@@ -32,43 +32,46 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+//        runProtocol();
+    }
 
+    private void runProtocol()
+    {
+        AssetManager mgr = getResources().getAssets();
+        ProtocolActivity protocolActivity = new ProtocolActivity(mgr, "0");
+        protocolActivity.doInBackground();
     }
 
     @Override
     public void onClick (View view)
     {
-        EditText et = findViewById(R.id.partyIdtxt);
-        String data = et.getText().toString();
-        AssetManager mgr = getResources().getAssets();
         final String myIpAddress = getIpAddress();
-//        RequestQueue queue = Volley.newRequestQueue(this);
-//        String url = "http://35.171.69.162/polls/prepareOnline/" + myIpAddress;
-//
-//
-//        // Request a string response from the provided URL.
-//        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-//                new Response.Listener<String>() {
-//                    @Override
-//                    public void onResponse(String response) {
-//                        // Display the first 500 characters of the response string.
-//                        Log.println(Log.ERROR, "Error", response);
-//                    }
-//                }, new Response.ErrorListener() {
-//            @Override
-//            public void onErrorResponse(VolleyError error) {
-//                Log.println(Log.ERROR, "Error", "That didn't work!");
-//            }
-//        });
-//
-//        // Add the request to the RequestQueue.
-//        queue.add(stringRequest);
+        RequestQueue queue = Volley.newRequestQueue(this);
+        String url = "http://35.171.69.162/polls/registerToPoll/HyperMPC/"
+                + myIpAddress + "/online_mobile/";
+
+        // Request a string response from the provided URL.
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        // Display the first 500 characters of the response string.
+                        Log.println(Log.INFO, "Info", response);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.println(Log.ERROR, "Error", "That didn't work!");
+            }
+        });
+
+        // Add the request to the RequestQueue.
+        queue.add(stringRequest);
 //
 //        // download parties file
 //        downloadData();
 
-        ProtocolActivity protocolActivity = new ProtocolActivity(mgr, data);
-        protocolActivity.doInBackground();
+
     }
 
 
@@ -127,14 +130,4 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         downloadReference = downloadManager.enqueue(request);
         return downloadReference;
     }
-
-
-
-    /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
-    public native String stringFromJNI();
-    public native String testLibs();
-//    public native String protocolMain(AssetManager assetManager);
 }
