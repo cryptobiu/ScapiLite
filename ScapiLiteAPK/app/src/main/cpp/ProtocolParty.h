@@ -74,7 +74,7 @@ protected:
 
 public:
     ProtocolParty(int argc, char* argv [], bool commOn,
-                  JNIEnv *env, AAssetManager *assetManager, char* filesPath);
+                  JNIEnv *env, AAssetManager *assetManager);
     void split(const string &s, char delim, vector<string> &elems);
     vector<string> split(const string &s, char delim);
 
@@ -289,12 +289,11 @@ public:
 
 template <class FieldType>
 ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [], bool commOn,
-                                        JNIEnv *env, AAssetManager *assetManager, char* filesPath)
+                                        JNIEnv *env, AAssetManager *assetManager)
         : Protocol ("PerfectSecureMPC", argc, argv)
 {
 
     string circuitFile = this->getParser().getValueByKey(arguments, "circuitFile");
-    string path(filesPath);
     this->times = stoi(this->getParser().getValueByKey(arguments, "internalIterationsNumber"));
     string fieldType = this->getParser().getValueByKey(arguments, "fieldType");
     m_partyId = stoi(this->getParser().getValueByKey(arguments, "partyID"));
