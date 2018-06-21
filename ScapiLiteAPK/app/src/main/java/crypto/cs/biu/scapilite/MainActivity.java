@@ -12,8 +12,11 @@ import android.widget.EditText;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import com.android.volley.Request;
@@ -24,6 +27,9 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     static { System.loadLibrary("primitives"); }
@@ -32,13 +38,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-//        runProtocol();
     }
 
-    private void runProtocol()
+    private void runProtocol(List<String> args)
     {
         AssetManager mgr = getResources().getAssets();
-        ProtocolActivity protocolActivity = new ProtocolActivity(mgr, "0");
+        ProtocolActivity protocolActivity = new ProtocolActivity(mgr, args);
         protocolActivity.doInBackground();
     }
 
@@ -47,11 +52,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     {
         final String myIpAddress = getIpAddress();
         RequestQueue queue = Volley.newRequestQueue(this);
-        String url = "http://35.171.69.162/polls/registerToPoll/HyperMPC/"
+        String registerUrl = "http://35.171.69.162/polls/registerToPoll/HyperMPC/"
                 + myIpAddress + "/online_mobile/";
 
         // Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+        StringRequest urlRequest = new StringRequest(Request.Method.GET, registerUrl,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
@@ -66,12 +71,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 
         // Add the request to the RequestQueue.
-        queue.add(stringRequest);
-//
-//        // download parties file
-//        downloadData();
+        queue.add(urlRequest);
+
+        String getParamsUrl = "http://35.171.69.162/polls/getPollParams/" + myIpAddress;
+        StringRequest ParamsUrl = new StringRequest(Request.Method.GET, getParamsUrl,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try
+                        {
+                            List<String> jsonValues = new ArrayList<>();
+                            JSONObject jObject = new JSONObject(response);
+                            Iterator<String> iter = jObject.keys();
+                            while(iter.hasNext())
+                            {
+                                String key = iter.next();
+                                try
+                                {
+                                    jsonValues.add(jObject.getString(key));
+                                }
+                                catch (JSONException e)
+                                {
+                                    Log.println(Log.ERROR, "Error", e.getMessage());
+                                }
+                            }
+                            runProtocol(jsonValues);
 
 
+                        }
+                        catch (JSONException e)
+                        {
+                            Log.println(Log.ERROR, "Error", e.getMessage());
+                        }
+
+                }},
+                new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error)
+            {
+                Log.println(Log.ERROR, "Error", "That didn't work!");
+            }
+            });
+
+        queue.add(ParamsUrl);
     }
 
 
