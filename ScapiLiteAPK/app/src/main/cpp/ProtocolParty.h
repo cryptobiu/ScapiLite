@@ -299,7 +299,7 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [], bool commOn,
     string fieldType = this->getParser().getValueByKey(arguments, "fieldType");
     m_partyId = stoi(this->getParser().getValueByKey(arguments, "partyID"));
     int n = stoi(this->getParser().getValueByKey(arguments, "partiesNumber"));
-    string partiesFileName = this->getParser().getValueByKey(arguments, "partiesFile");
+//    string partiesFileName = this->getParser().getValueByKey(arguments, "partiesFile");
 
     if(fieldType.compare("ZpMersenne") == 0) {
         field = new TemplateField<FieldType>(2147483647);
@@ -340,23 +340,12 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [], bool commOn,
     {
 //    parties = MPCCommunication::setCommunication(io_service,m_partyId, N,
 //                                                 path + "/" + partiesFileName, env, assetManager);
-        parties = MPCCommunication::setCommunication(io_service, m_partyId, N,
-                                                     partiesFileName, env, assetManager);
+//        parties = MPCCommunication::setCommunication(io_service, m_partyId, N,
+//                                                     partiesFileName, env, assetManager);
     }
     string tmp = "init times";
     //cout<<"before sending any data"<<endl;
     byte tmpBytes[20];
-    for (int i=0; i<parties.size(); i++){
-
-        __android_log_print(ANDROID_LOG_VERBOSE, APPNAME,"Start handshake with %d", parties[i]->getID());
-        if (parties[i]->getID() < m_partyId){
-            parties[i]->getChannel()->write(tmp);
-            parties[i]->getChannel()->read(tmpBytes, tmp.size());
-        } else {
-            parties[i]->getChannel()->read(tmpBytes, tmp.size());
-            parties[i]->getChannel()->write(tmp);
-        }
-    }
 
     readMyInputs(env, assetManager);
 
@@ -594,27 +583,29 @@ bool ProtocolParty<FieldType>::broadcast(int party_id, vector<byte> myMessage, v
 template <class FieldType>
 void ProtocolParty<FieldType>::readMyInputs(JNIEnv *env, AAssetManager *assetManager)
 {
-    AAsset* file = AAssetManager_open(assetManager, inputsFile.c_str(), AASSET_MODE_BUFFER);
-    off_t fileLength = AAsset_getLength(file);
-    char* fileContent = new char[fileLength+1];
+//    AAsset* file = AAssetManager_open(assetManager, inputsFile.c_str(), AASSET_MODE_BUFFER);
+//    off_t fileLength = AAsset_getLength(file);
+//    char* fileContent = new char[fileLength+1];
+//
+//    // Read your file
+//    AAsset_read(file, fileContent, (size_t)fileLength);
+//
+//    // For safety you can add a 0 terminating character at the end of your file ...
+//    fileContent[fileLength] = '\0';
+//
+//    stringstream data(fileContent);
+//    int input;
+//    int i =0;
+//
+//    do
+//    {
+//        data >> input;
+//        myInputs[i] = input;
+//        i++;
+//    }
+//    while(!(data.eof()));
 
-    // Read your file
-    AAsset_read(file, fileContent, (size_t)fileLength);
-
-    // For safety you can add a 0 terminating character at the end of your file ...
-    fileContent[fileLength] = '\0';
-
-    stringstream data(fileContent);
-    int input;
-    int i =0;
-
-    do
-    {
-        data >> input;
-        myInputs[i] = input;
-        i++;
-    }
-    while(!(data.eof()));
+    myInputs[0] = stoi(inputsFile);
 
 }
 
