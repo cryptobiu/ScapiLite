@@ -11,21 +11,11 @@ ArithmeticCircuit::~ArithmeticCircuit() {}
 
 void ArithmeticCircuit::readCircuit(const char* fileName, JNIEnv *env, AAssetManager *assetManager)
 {
-    AAsset* file = AAssetManager_open(assetManager, fileName, AASSET_MODE_BUFFER);
-    off_t fileLength = AAsset_getLength(file);
-    char* fileContent = new char[fileLength+1];
-
-    // Read your file
-    AAsset_read(file, fileContent, (size_t)fileLength);
-
-    // For safety you can add a 0 terminating character at the end of your file ...
-    fileContent[fileLength] = '\0';
-
     int inFan, outFan, input1, input2, output, type, numOfinputsForParty, numOfoutputsForParty;
     int numberOfGates, numberOfParties, currentPartyNumber;
     int gateIndex = 0;
 
-    stringstream myfile(fileContent);
+    stringstream myfile(fileName);
 
     myfile >> numberOfGates;//get the gates
     myfile >> numberOfParties;
