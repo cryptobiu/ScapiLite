@@ -13,16 +13,43 @@
 #include "psmpc_ac_gf28lt.h"
 #include "comm_client.h"
 
+using namespace std;
+using namespace boost;
+
+void workerFunc()
+{
+    posix_time::seconds workTime(3);
+    cout << "Worker: running" << std::endl;
+
+    // Pretend to do something useful...
+    boost::this_thread::sleep(workTime);
+    cout << "Worker: finished" << std::endl;
+}
+
 extern "C"
+JNIEXPORT jstring JNICALL
+Java_crypto_cs_biu_scapilite_MainActivity_stringFromJNI(
+        JNIEnv *env,
+        jobject /* this */)
+{
+    string hello = "Hello from C++";
+    return env->NewStringUTF(hello.c_str());
+}
+
+
 JNIEXPORT void JNICALL
 Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
         JNIEnv *env,
         jobject obj /* this */,
         jobject assetManager,
-        jstring partyId, jstring partiesNumber,
-        jstring inputFile, jstring outputFile, jstring circuitFile,
-        jstring proxyAddress, jstring fieldType,
-        jstring internalIterationsNumber, jstring NG, jstring filesPath)
+        jstring partyId,
+        jstring partiesNumber,
+        jstring inputFile,
+        jstring outputFile,
+        jstring circuitFile,
+        jstring fieldType,
+        jstring internalIterationsNumber,
+        jstring NG)
 {
     AAssetManager *assMgr = AAssetManager_fromJava(env, assetManager);
 
@@ -45,25 +72,15 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     argv[14] = (char*)env->GetStringUTFChars(inputFile, 0);
     argv[15] = (char*)"outputFile";
     argv[16] = (char*)env->GetStringUTFChars(outputFile, 0);
-    argv[15] = (char*)"NG";
-    argv[16] = (char*)env->GetStringUTFChars(NG, 0);
-    argv[17] = NULL;
-
-    jboolean isCopy = (jboolean) false;
-    const char * path = env->GetStringUTFChars(filesPath, &isCopy);
-
-    AAsset* file = AAssetManager_open(assMgr, argv[12], AASSET_MODE_BUFFER);
-    off_t fileLength = AAsset_getLength(file);
-    char* fileContent = new char[fileLength+1];
-
-
+    argv[17] = (char*)"NG";
+    argv[18] = (char*)env->GetStringUTFChars(NG, 0);
+    argv[19] = NULL;
 
     comm_client::cc_args_t cc_args;
     cc_args.logcat = "psmpc";
     cc_args.proxy_addr = "34.239.19.87";
-    cc_args.proxy_port = (u_int16_t) 9000 + stoi(argv[8]);
+    cc_args.proxy_port = (u_int16_t) 9000 + atoi(argv[8]);
 
-    psmpc_ac_gf28lt ps(17, argv, &cc_args, env, assMgr, (char*)path);
+    psmpc_ac_gf28lt ps(17, argv, &cc_args, env, assMgr);
     ps.run_ac_protocol((size_t)stoi(argv[8]), (size_t)stoi(argv[10]), argv[12], 180);
 }
-

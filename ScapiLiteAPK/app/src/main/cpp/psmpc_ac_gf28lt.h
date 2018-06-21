@@ -69,7 +69,7 @@ class psmpc_ac_gf28lt : private ProtocolParty<GF28LT>, public ac_protocol
 
 public:
     psmpc_ac_gf28lt(int argc, char* argv [], comm_client::cc_args_t * args,
-                    JNIEnv *env, AAssetManager *assetManager, char* filesPath);
+                    JNIEnv *env, AAssetManager *assetManager);
     virtual ~psmpc_ac_gf28lt();
 
 protected:

@@ -17,43 +17,11 @@ import java.util.List;
 public class ProtocolActivity extends AsyncTask<Void, Void, Void>
 {
     AssetManager _manager;
-    String _partyId;
     List<String> _args;
 
     ProtocolActivity(AssetManager m, List<String> args)
     {
         _manager = m; _args = args;
-    }
-
-    @Override
-    protected Void doInBackground(Void... arg0)
-    {
-        String partyId = "";
-        String partiesNumber = "";
-        String inputFile = "";
-        String outputFile = "";
-        String circuitFile= "";
-        String proxyAddress = "";
-        String fieldType = "";
-        String internalIterationsNumber = "";
-        String NG = "";
-        partyId = _args.get(0);
-        partiesNumber = _args.get(1);
-        inputFile = _args.get(2);
-        outputFile = _args.get(3);
-        circuitFile= _args.get(4);
-        proxyAddress = _args.get(5);
-        fieldType = _args.get(6);
-        internalIterationsNumber = _args.get(7);
-        NG = _args.get(8);
-
-        downloadCircuit(circuitFile);
-
-        protocolMain(_manager, partyId, partiesNumber, inputFile, outputFile, circuitFile,
-                proxyAddress, fieldType, internalIterationsNumber, NG,
-                Environment.getExternalStorageDirectory().getAbsolutePath());
-
-        return null;
     }
 
     private void downloadCircuit(String circuitFile)
@@ -87,9 +55,30 @@ public class ProtocolActivity extends AsyncTask<Void, Void, Void>
         }
     }
 
+    @Override
+    protected Void doInBackground(Void... arg0)
+    {
+        String partyId = _args.get(0);
+        String partiesNumber = _args.get(1);
+        String inputFile = _args.get(2);
+        String outputFile = _args.get(3);
+        String circuitFile= _args.get(4);
+        String proxyAddress = _args.get(5);
+        String fieldType = _args.get(6);
+        String internalIterationsNumber = _args.get(7);
+        String NG = _args.get(8);
+
+        downloadCircuit(circuitFile);
+
+        protocolMain(_manager, partyId, partiesNumber, inputFile, outputFile, circuitFile,
+                 fieldType, internalIterationsNumber, NG);
+
+        return null;
+    }
+
     public native void protocolMain(AssetManager assetManager, String partyId, String partiesNumber,
                                     String inputFile, String outputFile, String circuitFile,
-                                    String proxyAddress, String fieldType,
-                                    String internalIterationsNumber, String NG, String filesPath);
+                                    String fieldType, String internalIterationsNumber, String NG);
+
 
 }

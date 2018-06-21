@@ -18,12 +18,9 @@
 
 
 psmpc_ac_gf28lt::psmpc_ac_gf28lt(int argc, char* argv [],  comm_client::cc_args_t * args,
-                                 JNIEnv *env, AAssetManager *assetManager, char* filesPath)
-: ProtocolParty<GF28LT>(argc, argv, false, env, assetManager, filesPath),
-  ac_protocol(args), m_no_buckets(-1)
-{
-
-}
+                                 JNIEnv *env, AAssetManager *assetManager)
+: ProtocolParty<GF28LT>(argc, argv, false, env, assetManager),
+  ac_protocol(args), m_no_buckets(-1) {}
 
 psmpc_ac_gf28lt::~psmpc_ac_gf28lt() {}
 

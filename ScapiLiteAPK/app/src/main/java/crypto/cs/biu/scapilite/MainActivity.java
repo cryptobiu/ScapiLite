@@ -46,9 +46,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick (View view)
     {
+
         final String myIpAddress = getIpAddress();
         RequestQueue queue = Volley.newRequestQueue(this);
-        String registerUrl = "http://35.171.69.162/polls/registerToPoll/HyperMPC/"
+        String registerUrl = "http://35.171.69.162/polls/registerToPoll/Test017/"
                 + myIpAddress + "/online_mobile/";
 
         // Request a string response from the provided URL.
@@ -69,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // Add the request to the RequestQueue.
         queue.add(urlRequest);
 
-        String getParamsUrl = "http://35.171.69.162/polls/getPollParams/" + myIpAddress;
+        String getParamsUrl = "http://35.171.69.162/polls/getPollParams/Test017/" + myIpAddress;
         StringRequest ParamsUrl = new StringRequest(Request.Method.GET, getParamsUrl,
                 new Response.Listener<String>() {
                     @Override
@@ -169,3 +170,5 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return downloadReference;
     }
 }
+
+
