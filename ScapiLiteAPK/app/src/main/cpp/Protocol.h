@@ -50,11 +50,11 @@ public:
     /**
      * Executes the protocol.
      */
-    virtual void run() = 0;
+    virtual string run() = 0;
     virtual bool hasOffline() = 0;
     virtual void runOffline(){};
     virtual bool hasOnline() = 0;
-    virtual void runOnline(){};
+    virtual string runOnline(){};
     vector<pair<string, string>> getArguments();
     CmdParser getParser();
 

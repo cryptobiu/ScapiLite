@@ -93,7 +93,7 @@ public:
      * Computation Phase
      * Output Phase
      */
-    void run() override;
+    string run() override;
 
     bool hasOffline() {
         return true;
@@ -117,7 +117,7 @@ public:
      * Verification Phase
      * Output Phase
      */
-    void runOnline() override;
+    string runOnline() override;
 
     /**
      * This method reads text file and inits a vector of Inputs according to the file.
@@ -281,7 +281,7 @@ public:
     /**
      * Walk through the circuit and reconstruct output gates.
      */
-    void outputPhase();
+    string outputPhase();
 
     ~ProtocolParty();
 };
@@ -327,6 +327,7 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [], bool commOn,
 
     s = to_string(m_partyId);
 //    circuit.readCircuit((path + "/" + circuitFile).c_str(), env, assetManager);
+    //BUGGGGGGGGGGGGGGGGGGGG
     circuit.readCircuit(circuitFile.c_str(), env, assetManager);
     circuit.reArrangeCircuit();
     M = circuit.getNrOfGates();
@@ -609,20 +610,13 @@ void ProtocolParty<FieldType>::readMyInputs(JNIEnv *env, AAssetManager *assetMan
 }
 
 template <class FieldType>
-void ProtocolParty<FieldType>::run() {
-    for (iteration=0; iteration<times; iteration++){
-        auto t1start = high_resolution_clock::now();
-        //timer->startSubTask("Offline", iteration);
-        runOffline();
-        //timer->endSubTask("Offline", iteration);
-        //timer->startSubTask("Online", iteration);
-        runOnline();
-        //timer->endSubTask("Online", iteration);
-        auto t2end = high_resolution_clock::now();
-        auto duration = duration_cast<milliseconds>(t2end-t1start).count();
-
-        cout << "time in milliseconds for protocol: " << duration << endl;
-    }
+string ProtocolParty<FieldType>::run() {
+    auto t1start = high_resolution_clock::now();
+    //timer->startSubTask("Offline", iteration);
+    runOffline();
+    //timer->endSubTask("Offline", iteration);
+    //timer->startSubTask("Online", iteration);
+    return runOnline();
 }
 
 /**
@@ -697,7 +691,7 @@ void ProtocolParty<FieldType>::runOffline() {
  * Output Phase
  */
 template <class FieldType>
-void ProtocolParty<FieldType>::runOnline() {
+string  ProtocolParty<FieldType>::runOnline() {
     string sss = "";
 
     auto t1 = high_resolution_clock::now();
@@ -726,17 +720,7 @@ void ProtocolParty<FieldType>::runOnline() {
         cout << "time in milliseconds computationPhase: " << duration << endl;
     }
 
-    t1 = high_resolution_clock::now();
-    //timer->startSubTask("OutputPhase", iteration);
-    outputPhase();
-    //timer->endSubTask("OutputPhase", iteration);
-    t2 = high_resolution_clock::now();
-
-    duration = duration_cast<milliseconds>(t2-t1).count();
-
-    if(flag_print_timings) {
-        cout << "time in milliseconds outputPhase: " << duration << endl;
-    }
+    return outputPhase();
 }
 
 template <class FieldType>
@@ -1973,17 +1957,16 @@ void ProtocolParty<FieldType>::processRandoms()
  * @param alpha
  */
 template <class FieldType>
-void ProtocolParty<FieldType>::outputPhase()
+string ProtocolParty<FieldType>::outputPhase()
 {
     int count=0;
+    string output = "";
     vector<FieldType> x1(N); // vector for the shares of my outputs
     vector<vector<FieldType>> sendBufsElements(N);
     vector<vector<byte>> sendBufsBytes(N);
     vector<vector<byte>> recBufBytes(N);
 
     FieldType num;
-    ofstream myfile;
-    myfile.open(outputFile);
 
     for(int k=M-numOfOutputGates; k < M; k++)
     {
@@ -2028,18 +2011,19 @@ void ProtocolParty<FieldType>::outputPhase()
                 // someone cheated!
                 if(flag_print) {
                     cout << "cheating!!!" << '\n';}
-                return;
+                return "Error";
             }
-            if(flag_print_output)
-                cout << "the result for "<< circuit.getGates()[k].input1 << " is : " << field->elementToString(interpolate(x1)) << '\n';
-            //myfile << field->elementToString(interpolate(x1));
+            if(flag_print_output){
+                     output += field->elementToString(interpolate(x1));
+
+            }
 
             counter++;
         }
     }
 
-    // close output file
-    myfile.close();
+    return output;
+
 }
 
 
