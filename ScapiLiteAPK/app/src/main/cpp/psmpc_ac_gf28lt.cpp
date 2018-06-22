@@ -730,6 +730,7 @@ bool psmpc_ac_gf28lt::outpt_2_done()
             // my output: reconstruct received shares
             if (!checkConsistency(x1, T))
             {
+                output += field->elementToString(interpolate(x1));
                 lc_error("%s: cheat check failed.", __FUNCTION__);
                 return (m_run_flag = false);
             }

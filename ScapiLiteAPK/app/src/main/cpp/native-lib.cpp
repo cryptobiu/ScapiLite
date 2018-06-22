@@ -36,8 +36,8 @@ Java_crypto_cs_biu_scapilite_MainActivity_stringFromJNI(
     return env->NewStringUTF(hello.c_str());
 }
 
-
-JNIEXPORT void JNICALL
+extern "C"
+JNIEXPORT jstring JNICALL
 Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
         JNIEnv *env,
         jobject obj /* this */,
@@ -83,4 +83,6 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
 
     psmpc_ac_gf28lt ps(17, argv, &cc_args, env, assMgr);
     ps.run_ac_protocol((size_t)stoi(argv[8]), (size_t)stoi(argv[10]), argv[12], 180);
+    string output = ps.output;
+    return env->NewStringUTF(output);
 }

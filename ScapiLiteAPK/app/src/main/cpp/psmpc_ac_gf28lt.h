@@ -71,6 +71,7 @@ public:
     psmpc_ac_gf28lt(int argc, char* argv [], comm_client::cc_args_t * args,
                     JNIEnv *env, AAssetManager *assetManager);
     virtual ~psmpc_ac_gf28lt();
+    string output;
 
 protected:
     virtual void handle_party_conn(const size_t party_id, const bool connected);
