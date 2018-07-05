@@ -1,6 +1,58 @@
 <resources>
-    <string name="app_name">ScapiLite</string>
-    <string name="header">Biu Cyber Center Polls</string>
-    <string name="main_logo">logo</string>
-    <string name="registerPoll">Register to Poll</string>
+    <string name="app_name">AnonyPoll</string>
+    <string name="no">no</string>
+    <string name="yes">yes</string>
+    <string name="ok">ok</string>
+    <string name="network_problem_title">Network Problems!</string>
+    <string name="network_problem_text">You are not connected to the Internet. Please check your network
+        connections!
+    </string>
+
+    <string name="facebook_app_id">570434523329808</string>
+    <string name="fb_login_protocol_scheme">fb570434523329808</string>
+    <string name="login">AnonyPoll Login</string>
+    <string name="welcome">Welcome</string>
+    <string name="new_poll">This poll will be executed on</string>
+    <string name="today_topic">Today\'s topic:</string>
+    <string name="join_with_facebook">If you want to join, please login with Facebook</string>
+    <string name="do_you_want_to_join">Do you want to join?</string>
+    <string name="you_declined">You declined to join this poll. If you still want to join, click on join button below</string>
+    <string name="you_accepted">You have accepted the poll. When the countdown timer ends, the results will be shown</string>
+    <string name="join">Join</string>
+    <string name="day">day</string>
+    <string name="time_over_cannot_join">Time\'s over. You cannot join the poll anymore</string>
+    <string name="no_poll">Sorry, there is no active poll at this moment. Please try again later</string>
+    <string name="decline_question">Are you sure that you don\'t want to be part of this poll?</string>
+    <string name="decline">Decline this poll</string>
+    <string name="your_answer">Your answer</string>
+    <string name="save">Save</string>
+    <string name="total_users">Total users:</string>
+    <string name="choose_poll">Join poll</string>
+    <string name="polls">Polls</string>
+    <string name="offline">OFFLINE</string>
+    <string name="offline_text">I will not be online. Show me instructions for offline participation</string>
+    <string name="online">ONLINE</string>
+    <string name="online_text">I will be online during the poll from my mobile or browser. Send me a reminder 10 minutes prior to the poll</string>
+    <string name="trusted">Trusted instance</string>
+    <string name="private_instance">My own instance</string>
+    <string name="private_instance_text">Continue with your own instance using our docker image</string>
+    <string name="choose_execution_mode">Choose participation:</string>
+    <string name="choose_instance_type">Offline participation:</string>
+    <string name="execution_mode">Participation</string>
+    <string name="offline_mode">Offline mode</string>
+    <string name="please_wait">Please wait. It can take a while!</string>
+    <string name="creating_instance">Creating instance</string>
+    <string name="trusted_text">Please create an AWS instance for me as described in <u>"AnonyPoll Trusted Instance Guidelines"</u></string>
+    <string name="completed">Completed</string>
+    <string name="active">Active</string>
+    <string name="prices_in_euro">* the currency is Euro</string>
+    <string name="i_agree">I agree</string>
+    <string name="must_accept">You must accept in order to contunue!</string>
+    <string name="average_salary">Average Salary</string>
+    <string name="results">Results</string>
+    <string name="euros">Euros</string>
+    <string name="logout">Logout</string>
+    <string name="poll_already_executed">Poll already executed</string>
+    <string name="this_feature_is_not_ready">We created offline instance for you</string>
+    <string name="not_ready">We are working on it</string>
 </resources>
