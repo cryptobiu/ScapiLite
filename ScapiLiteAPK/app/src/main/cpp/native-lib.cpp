@@ -16,8 +16,7 @@
 using namespace std;
 using namespace boost;
 
-void workerFunc()
-{
+void workerFunc() {
     posix_time::seconds workTime(3);
     cout << "Worker: running" << std::endl;
 
@@ -30,8 +29,7 @@ extern "C"
 JNIEXPORT jstring JNICALL
 Java_crypto_cs_biu_scapilite_MainActivity_stringFromJNI(
         JNIEnv *env,
-        jobject /* this */)
-{
+        jobject /* this */) {
     string hello = "Hello from C++";
     return env->NewStringUTF(hello.c_str());
 }
@@ -49,31 +47,30 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
         jstring circuitFile,
         jstring fieldType,
         jstring internalIterationsNumber,
-        jstring NG)
-{
+        jstring NG) {
     AAssetManager *assMgr = AAssetManager_fromJava(env, assetManager);
 
-    char* argv[20];
+    char *argv[20];
 
-    argv[0] = (char*)"PerfectSecureMPC";
-    argv[1] = (char*)"circuitFile";
-    argv[2] = (char*)env->GetStringUTFChars(circuitFile, 0);
-    argv[3] = (char*)"fieldType";
-    argv[4] = (char*)env->GetStringUTFChars(fieldType, 0);
-    argv[5] = (char*)"internalIterationsNumber";
-    argv[6] = (char*)env->GetStringUTFChars(internalIterationsNumber, 0);
-    argv[7] = (char*)"partyID";
-    argv[8] = (char*)env->GetStringUTFChars(partyId, 0);
-    argv[9] = (char*)"partiesNumber";
-    argv[10] = (char*)env->GetStringUTFChars(partiesNumber, 0);
-    argv[11] = (char*)"partiesFile";
-    argv[12] = (char*)"parties.conf";
-    argv[13] = (char*)"inputFile";
-    argv[14] = (char*)env->GetStringUTFChars(inputFile, 0);
-    argv[15] = (char*)"outputFile";
-    argv[16] = (char*)env->GetStringUTFChars(outputFile, 0);
-    argv[17] = (char*)"NG";
-    argv[18] = (char*)env->GetStringUTFChars(NG, 0);
+    argv[0] = (char *) "PerfectSecureMPC";
+    argv[1] = (char *) "circuitFile";
+    argv[2] = (char *) env->GetStringUTFChars(circuitFile, 0);
+    argv[3] = (char *) "fieldType";
+    argv[4] = (char *) env->GetStringUTFChars(fieldType, 0);
+    argv[5] = (char *) "internalIterationsNumber";
+    argv[6] = (char *) env->GetStringUTFChars(internalIterationsNumber, 0);
+    argv[7] = (char *) "partyID";
+    argv[8] = (char *) env->GetStringUTFChars(partyId, 0);
+    argv[9] = (char *) "partiesNumber";
+    argv[10] = (char *) env->GetStringUTFChars(partiesNumber, 0);
+    argv[11] = (char *) "partiesFile";
+    argv[12] = (char *) "parties.conf";
+    argv[13] = (char *) "inputFile";
+    argv[14] = (char *) env->GetStringUTFChars(inputFile, 0);
+    argv[15] = (char *) "outputFile";
+    argv[16] = (char *) env->GetStringUTFChars(outputFile, 0);
+    argv[17] = (char *) "NG";
+    argv[18] = (char *) env->GetStringUTFChars(NG, 0);
     argv[19] = NULL;
 
     comm_client::cc_args_t cc_args;
@@ -82,7 +79,7 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     cc_args.proxy_port = (u_int16_t) 9000 + atoi(argv[8]);
 
     psmpc_ac_gf28lt ps(17, argv, &cc_args, env, assMgr);
-    ps.run_ac_protocol((size_t)stoi(argv[8]), (size_t)stoi(argv[10]), argv[12], 180);
+    ps.run_ac_protocol((size_t) stoi(argv[8]), (size_t) stoi(argv[10]), argv[12], 180);
     string output = ps.output;
-    return env->NewStringUTF(output);
+    return env->NewStringUTF(output.c_str());
 }

@@ -5,12 +5,14 @@
 #include <list>
 #include <android/log.h>
 
-#define lc_fatal(...) __android_log_print(ANDROID_LOG_FATAL,m_logcat.c_str(),__VA_ARGS__)
-#define lc_error(...) __android_log_print(ANDROID_LOG_ERROR,m_logcat.c_str(),__VA_ARGS__)
-#define lc_warn(...) __android_log_print(ANDROID_LOG_WARN,m_logcat.c_str(),__VA_ARGS__)
-#define lc_notice(...) __android_log_print(ANDROID_LOG_INFO,m_logcat.c_str(),__VA_ARGS__)
-#define lc_info(...) __android_log_print(ANDROID_LOG_INFO,m_logcat.c_str(),__VA_ARGS__)
-#define lc_debug(...) __android_log_print(ANDROID_LOG_DEBUG,m_logcat.c_str(),__VA_ARGS__)
+#define APPNAME "ScapiLite"
+
+#define lc_fatal(...) __android_log_print(ANDROID_LOG_FATAL,APPNAME,__VA_ARGS__)
+#define lc_error(...) __android_log_print(ANDROID_LOG_ERROR,APPNAME,__VA_ARGS__)
+#define lc_warn(...) __android_log_print(ANDROID_LOG_WARN,APPNAME,__VA_ARGS__)
+#define lc_notice(...) __android_log_print(ANDROID_LOG_INFO,APPNAME,__VA_ARGS__)
+#define lc_info(...) __android_log_print(ANDROID_LOG_INFO,APPNAME,__VA_ARGS__)
+#define lc_debug(...) __android_log_print(ANDROID_LOG_DEBUG,APPNAME,__VA_ARGS__)
 
 
 #include "comm_client.h"
@@ -199,6 +201,7 @@ bool psmpc_ac_gf28lt::round_up()
             return outpt_2_done();
         case ps_done:
             lc_notice("%s: Protocol done; success.",__FUNCTION__);
+            lc_notice("%s: Protocol output : %s" , __FUNCTION__, m_output.c_str());
             return (m_run_flag = false);
     }
 
@@ -734,6 +737,8 @@ bool psmpc_ac_gf28lt::outpt_2_done()
                 lc_error("%s: cheat check failed.", __FUNCTION__);
                 return (m_run_flag = false);
             }
+            else
+                m_output = field->elementToString(interpolate(x1));
         }
     }
 
