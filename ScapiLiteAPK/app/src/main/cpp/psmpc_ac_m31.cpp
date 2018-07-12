@@ -16,17 +16,15 @@
 
 
 #include "comm_client.h"
-#include "psmpc_ac_gf28lt.h"
+#include "psmpc_ac_m31.h"
 
+psmpc_ac_m31::psmpc_ac_m31(int argc, char* argv [],  comm_client::cc_args_t * args,
+                           JNIEnv *env, AAssetManager *assetManager)
+: ProtocolParty<M31>(argc, argv, env, assetManager, false), ac_protocol(args), m_no_buckets(-1) {}
 
-psmpc_ac_gf28lt::psmpc_ac_gf28lt(int argc, char* argv [],  comm_client::cc_args_t * args,
-                                 JNIEnv *env, AAssetManager *assetManager)
-: ProtocolParty<GF28LT>(argc, argv, env, assetManager, false),
-  ac_protocol(args), m_no_buckets(-1) {}
+psmpc_ac_m31::~psmpc_ac_m31() {}
 
-psmpc_ac_gf28lt::~psmpc_ac_gf28lt() {}
-
-void psmpc_ac_gf28lt::handle_party_conn(const size_t party_id, const bool connected)
+void psmpc_ac_m31::handle_party_conn(const size_t party_id, const bool connected)
 {
     party_t & peer(m_parties_state[party_id]);
     if (connected)
@@ -53,13 +51,13 @@ void psmpc_ac_gf28lt::handle_party_conn(const size_t party_id, const bool connec
     }
 }
 
-void psmpc_ac_gf28lt::handle_party_msg(const size_t party_id, std::vector<u_int8_t> &msg)
+void psmpc_ac_m31::handle_party_msg(const size_t party_id, std::vector<u_int8_t> &msg)
 {
     party_t & peer(m_parties_state[party_id]);
     peer.m_data.insert(peer.m_data.end(), msg.data(), msg.data() + msg.size());
 }
 
-int psmpc_ac_gf28lt::pre_run()
+int psmpc_ac_m31::pre_run()
 {
     m_parties_state.resize(m_parties);
 
@@ -72,12 +70,12 @@ int psmpc_ac_gf28lt::pre_run()
     return 0;
 }
 
-int psmpc_ac_gf28lt::post_run()
+int psmpc_ac_m31::post_run()
 {
     return 0;
 }
 
-void psmpc_ac_gf28lt::generate_random_double_shares()
+void psmpc_ac_m31::generate_random_double_shares()
 {
     /**
      *  generate double sharings.
@@ -87,7 +85,7 @@ void psmpc_ac_gf28lt::generate_random_double_shares()
     int no_random = circuit.getNrOfInputGates();
     m_no_buckets = (no_random / (N-2*T))+1;
 
-    vector<GF28LT> x1(N, 0),y1(N, 0);
+    vector<M31> x1(N, 0),y1(N, 0);
     for(size_t k=0; k < m_no_buckets; k++)
     {
         // generate random degree-T polynomial
@@ -106,7 +104,7 @@ void psmpc_ac_gf28lt::generate_random_double_shares()
     }
 }
 
-int psmpc_ac_gf28lt::output_phase_comm(const size_t peer_id, size_t &to_send, size_t &to_recv)
+int psmpc_ac_m31::output_phase_comm(const size_t peer_id, size_t &to_send, size_t &to_recv)
 {
     to_send = to_recv = 0;
 
@@ -129,7 +127,7 @@ int psmpc_ac_gf28lt::output_phase_comm(const size_t peer_id, size_t &to_send, si
     return 0;
 }
 
-bool psmpc_ac_gf28lt::run_around()
+bool psmpc_ac_m31::run_around()
 {
     bool round_ready = true;
     for(size_t pid = 0; pid < m_parties; ++pid)
@@ -140,7 +138,7 @@ bool psmpc_ac_gf28lt::run_around()
     return round_ready;
 }
 
-bool psmpc_ac_gf28lt::party_run_around(const size_t party_id)
+bool psmpc_ac_m31::party_run_around(const size_t party_id)
 {
     party_t & peer(m_parties_state[party_id]);
     switch(peer.m_current_state)
@@ -169,7 +167,7 @@ bool psmpc_ac_gf28lt::party_run_around(const size_t party_id)
     return false;
 }
 
-bool psmpc_ac_gf28lt::round_up()
+bool psmpc_ac_m31::round_up()
 {
     party_state_t current_state = ps_nil;
     if(!all_on_the_same_page(current_state))
@@ -208,7 +206,7 @@ bool psmpc_ac_gf28lt::round_up()
     return false;
 }
 
-bool psmpc_ac_gf28lt::all_on_the_same_page(party_state_t & current_state)
+bool psmpc_ac_m31::all_on_the_same_page(party_state_t & current_state)
 {
     current_state = m_parties_state[m_id].m_current_state;
 
@@ -222,29 +220,37 @@ bool psmpc_ac_gf28lt::all_on_the_same_page(party_state_t & current_state)
     return true;
 }
 
-bool psmpc_ac_gf28lt::send_aux(party_t &peer)
+bool psmpc_ac_m31::send_aux(party_t &peer)
 {
     size_t elem_size = field->getElementSizeInBytes();
     u_int8_t buffer[4096];
-    size_t offset = 0;
-    for (std::vector<GF28LT>::iterator j = peer.m_aux.begin(); j != peer.m_aux.end(); ++j)
-    {
-        field->elementToBytes(buffer + offset, *j);
-        offset += elem_size;
 
-        if ((offset + elem_size) > 4096 || peer.m_aux.end() == (j + 1))
-        {
-            if (0 != m_cc->send(peer.m_id, buffer, offset))
-            {
-                return false;
-            }
-            offset = 0;
-        }
+    size_t chunk_elements = 4096 / elem_size;
+    if(0 == chunk_elements)
+    {
+    	lc_error("%s: chunk_elements = 4096 / elem_size(%lu) = 0", __FUNCTION__, elem_size);
+    	return false;
     }
+
+    if(peer.m_aux.size() < chunk_elements) chunk_elements = peer.m_aux.size();
+
+    for(size_t i = 0; i < chunk_elements; ++i)
+    {
+    	field->elementToBytes(buffer + (i * elem_size), peer.m_aux[i]);
+    }
+
+    if (0 != m_cc->send(peer.m_id, buffer, chunk_elements * elem_size))
+    {
+    	lc_error("%s: comm client send() failed.", __FUNCTION__);
+        return false;
+    }
+
+    peer.rnd_data_sent += chunk_elements;
+    peer.m_aux.erase(peer.m_aux.begin(), peer.m_aux.begin() + chunk_elements);
     return true;
 }
 
-bool psmpc_ac_gf28lt::recv_aux(party_t &peer, const size_t required_elements)
+bool psmpc_ac_m31::recv_aux(party_t &peer, const size_t required_elements)
 {
     size_t elem_size = field->getElementSizeInBytes();
 
@@ -253,7 +259,7 @@ bool psmpc_ac_gf28lt::recv_aux(party_t &peer, const size_t required_elements)
         if(peer.m_data.size() < elem_size)
             return false;
 
-        GF28LT x = field->bytesToElement(peer.m_data.data());
+        M31 x = field->bytesToElement(peer.m_data.data());
         peer.m_aux.push_back(x);
         peer.m_data.erase(peer.m_data.begin(), peer.m_data.begin() + elem_size);
     }
@@ -261,25 +267,28 @@ bool psmpc_ac_gf28lt::recv_aux(party_t &peer, const size_t required_elements)
     return true;
 }
 
-bool psmpc_ac_gf28lt::on_round_send_and_recv(party_t &peer)
+bool psmpc_ac_m31::on_round_send_and_recv(party_t &peer)
 {
     lc_debug("%s: peer %lu current state %lu; 2snd %lu; 2rcv %lu;",
              __FUNCTION__, peer.m_id, peer.m_current_state, peer.rnd_data_2send, peer.rnd_data_2recv);
-    if(peer.rnd_data_sent < peer.rnd_data_2send)
+
+    if(peer.rnd_data_2send > peer.rnd_data_sent)
     {
-        if (peer.rnd_data_2send > peer.m_aux.size())
-        {
-            lc_fatal("%s: peer id %lu not enough data in aux buffer %lu/%lu"
-                     ,__FUNCTION__, peer.m_id, peer.m_aux.size(), peer.rnd_data_2send);
-            exit(__LINE__);
-        }
-        if (!send_aux(peer))
+    	if((peer.rnd_data_2send - peer.rnd_data_sent) != peer.m_aux.size())
+    	{
+            lc_error("%s: peer %lu send mismatch: 2send = %lu; sent = %lu; send buffer = %lu.",
+            		__FUNCTION__, peer.m_id, peer.rnd_data_2send, peer.rnd_data_sent, peer.m_aux.size());
+            return (m_run_flag = false);
+    	}
+
+    	if (!send_aux(peer))
         {
             lc_error("%s: failed sending data to party %lu; Perfect Secure failed.", __FUNCTION__, peer.m_id);
             return (m_run_flag = false);
         }
-        peer.m_aux.clear();
-        peer.rnd_data_sent = peer.rnd_data_2send;
+
+    	if(!peer.m_aux.empty())
+        	return false;
     }
 
     if(peer.rnd_data_rcvd < peer.rnd_data_2recv)
@@ -291,20 +300,21 @@ bool psmpc_ac_gf28lt::on_round_send_and_recv(party_t &peer)
             peer.rnd_data_rcvd = peer.rnd_data_2recv;
     }
 
-    peer.rnd_data_2recv = peer.rnd_data_2send = peer.rnd_data_rcvd = peer.rnd_data_sent = 0;
+    peer.rnd_data_2send = peer.rnd_data_sent = 0;
+    peer.rnd_data_2recv = peer.rnd_data_rcvd = 0;
     return true;
 }
 
-bool psmpc_ac_gf28lt::rsfi1_2_rsfi2()
+bool psmpc_ac_m31::rsfi1_2_rsfi2()
 {
-    vector <GF28LT> x1(N), y1(N);
+    vector <M31> x1(N), y1(N);
     int no_random = circuit.getNrOfInputGates();
     m_no_buckets = (no_random / (N-2*T))+1;
 
     sharingBufInputsTElements.resize((size_t) m_no_buckets * (N - 2 * T));
     int robin = 0;
 
-    std::vector< std::vector< GF28LT > > aux_temp(m_parties);
+    std::vector< std::vector< M31 > > aux_temp(m_parties);
     for (int i = 0; i < N; i++)
         aux_temp[i].swap(m_parties_state[i].m_aux);
 
@@ -332,21 +342,22 @@ bool psmpc_ac_gf28lt::rsfi1_2_rsfi2()
             sharingBufInputsTElements[k*(N-2*T) + i - 2*T] = y1[i];
     }
 
+
     for (size_t j = 0; j < N; j++)
         m_parties_state[j].rnd_data_2recv = m_parties_state[m_id].rnd_data_2send;
 
     return true;
 }
 
-bool psmpc_ac_gf28lt::rsfi2_2_prep1()
+bool psmpc_ac_m31::rsfi2_2_prep1()
 {
-    //m_no_buckets used here with the same value calculated in psmpc_ac_gf28lt::rsfi1_2_rsfi2()
+    //m_no_buckets used here with the same value calculated in psmpc_ac_m31::rsfi1_2_rsfi2()
 
     int count = m_no_buckets * (2*T) / N;
     if(m_no_buckets * (2*T)%N > m_partyId)
         count++;
 
-    vector<GF28LT> x1(N),x2(N),y1(N),y2(N);
+    vector<M31> x1(N),x2(N),y1(N),y2(N);
 
     for(int k=0; k < count; k++)
     {
@@ -415,15 +426,15 @@ bool psmpc_ac_gf28lt::rsfi2_2_prep1()
     return true;
 }
 
-bool psmpc_ac_gf28lt::prep1_2_prep2()
+bool psmpc_ac_m31::prep1_2_prep2()
 {
     int no_random = circuit.getNrOfMultiplicationGates();
     m_no_buckets = (no_random / (N-2*T))+1;
 
-    vector<GF28LT> x1(N),x2(N),y1(N),y2(N);
+    vector<M31> x1(N),x2(N),y1(N),y2(N);
     int robin = 0;
 
-    std::vector< std::vector< GF28LT > > aux_temp(m_parties);
+    std::vector< std::vector< M31 > > aux_temp(m_parties);
     for(size_t i = 0; i < m_parties; ++i)
         aux_temp[i].swap(m_parties_state[i].m_aux);
 
@@ -464,6 +475,7 @@ bool psmpc_ac_gf28lt::prep1_2_prep2()
         x2[0] = *(field->GetZero());
     }
 
+
     for(size_t i = 0; i < m_parties; ++i)
     {
         m_parties_state[i].rnd_data_2recv = m_parties_state[m_id].rnd_data_2send;
@@ -473,7 +485,7 @@ bool psmpc_ac_gf28lt::prep1_2_prep2()
     return true;
 }
 
-bool psmpc_ac_gf28lt::prep2_2_inprp()
+bool psmpc_ac_m31::prep2_2_inprp()
 {
     int no_random = circuit.getNrOfMultiplicationGates();
     m_no_buckets = (no_random / (N-2*T))+1;
@@ -481,7 +493,7 @@ bool psmpc_ac_gf28lt::prep2_2_inprp()
     if(m_no_buckets * (2*T)%N > m_partyId)
         count++;
 
-    vector<GF28LT> x1(N),x2(N),y1(N),y2(N);
+    vector<M31> x1(N),x2(N),y1(N),y2(N);
 
     for(int k=0; k < count; k++)
     {
@@ -492,7 +504,7 @@ bool psmpc_ac_gf28lt::prep2_2_inprp()
             x2[i] = m_parties_state[i].m_aux[2 * k + 1];
         }
 
-        vector<GF28LT> x_until_d(N);
+        vector<M31> x_until_d(N);
         for(int i=0; i<T; i++)
             x_until_d[i] = x1[i];
         for(int i=T; i<N; i++)
@@ -521,17 +533,19 @@ bool psmpc_ac_gf28lt::prep2_2_inprp()
         m_parties_state[i].rnd_data_2send++;
     }
 
+    //All clear at this point
+
     for(size_t i = 0; i < m_parties; ++i)
         m_parties_state[i].rnd_data_2recv = m_parties_state[m_id].rnd_data_2send;
 
     return true;
 }
 
-bool psmpc_ac_gf28lt::inprp_2_inadj1()
+bool psmpc_ac_m31::inprp_2_inadj1()
 {
-    vector<GF28LT> x1(N);
+    vector<M31> x1(N);
     int counter = 0;
-    GF28LT secret;
+    M31 secret;
 
     // reconstruct my random input values
     for(int k = 0; k < numOfInputGates; k++)
@@ -558,7 +572,7 @@ bool psmpc_ac_gf28lt::inprp_2_inadj1()
 
     // read the inputs of the party
     vector<int> sizes(N);
-    vector<GF28LT> diffElements;
+    vector<M31> diffElements;
     int input, index = 0;
 
     for (int k = 0; k < numOfInputGates; k++)
@@ -572,9 +586,9 @@ bool psmpc_ac_gf28lt::inprp_2_inadj1()
                 index++;
 
                 // the value is gateValue[k], but should be input.
-                GF28LT myinput = field->GetElement(input);
+                M31 myinput = field->GetElement(input);
 
-                GF28LT different = myinput - gateValueArr[k];
+                M31 different = myinput - gateValueArr[k];
                 diffElements.push_back(different);
             }
         }
@@ -589,13 +603,16 @@ bool psmpc_ac_gf28lt::inprp_2_inadj1()
     return true;
 }
 
-bool psmpc_ac_gf28lt::inadj1_2_inadj2()
+bool psmpc_ac_m31::inadj1_2_inadj2()
 {
+    for(size_t i = 0; i < m_parties; ++i)
+        m_parties_state[i].m_aux2 = m_parties_state[i].m_aux;
+
     // calculate total number of values which received
     int count = m_parties * m_parties_state[m_id].m_aux.size();
     m_no_buckets = count / (N - T) + 1;
 
-    vector<GF28LT> valBufs;
+    vector<M31> valBufs;
     valBufs.reserve(count);
     for(size_t i = 0; i < m_parties; ++i)
     {
@@ -606,8 +623,8 @@ bool psmpc_ac_gf28lt::inadj1_2_inadj2()
     for(size_t i = 0; i < m_parties; ++i)
         m_parties_state[i].m_current_state = ps_inadj2;
 
-    vector<GF28LT> x1(N);
-    vector<GF28LT> y1(N);
+    vector<M31> x1(N);
+    vector<M31> y1(N);
 
     int index = 0;
 
@@ -645,9 +662,11 @@ bool psmpc_ac_gf28lt::inadj1_2_inadj2()
     return true;
 }
 
-bool psmpc_ac_gf28lt::inadj2_2_outpt()
+bool psmpc_ac_m31::inadj2_2_outpt()
 {
-    GF28LT temp1;
+    //p21
+
+    M31 temp1;
 
     for(size_t k=0; k < m_no_buckets; k++)
     {
@@ -663,19 +682,24 @@ bool psmpc_ac_gf28lt::inadj2_2_outpt()
 
         }
     }
+    for(size_t i = 0; i < N; i++)
+        m_parties_state[i].m_aux = m_parties_state[i].m_aux2;
 
-    GF28LT db;
+    M31 db;
     vector<int> counters(N, 0);
 
     for (size_t k = 0; k < numOfInputGates; k++)
     {
+        const TGate & a_gate(circuit.getGates()[k]);
         if(circuit.getGates()[k].gateType == INPUT)
         {
-            db = m_parties_state[circuit.getGates()[k].party].m_aux[counters[circuit.getGates()[k].party]];
-            counters[circuit.getGates()[k].party] += 1;
-            gateShareArr[circuit.getGates()[k].output] = gateShareArr[circuit.getGates()[k].output] + db; // adjustment
+            db = m_parties_state[a_gate.party].m_aux[counters[a_gate.party]];
+            counters[a_gate.party] += 1;
+            gateShareArr[a_gate.output] = gateShareArr[a_gate.output] + db; // adjustment
         }
     }
+
+    //p23
 
     for(size_t i =0; i < m_parties;++i)
         m_parties_state[i].m_aux.clear();
@@ -687,19 +711,17 @@ bool psmpc_ac_gf28lt::inadj2_2_outpt()
 
     for(int k=M-numOfOutputGates; k < M; k++)
     {
-        const TGate & a_gate(circuit.getGates()[k]);
-        if(OUTPUT == a_gate.gateType)
-        {
-
-            // send to party (which need this gate) your share for this gate
-            //m_parties_state[circuit.getGates()[k].party].m_aux.push_back(gateShareArr[circuit.getGates()[k].input1]);
-            m_parties_state[a_gate.party].m_aux.push_back(a_gate.input1);
-        }
-        else
-        {
-            lc_error("%s: gate %lu should be output; Perfect Secure failed.", __FUNCTION__, k);
-            return (m_run_flag = false);
-        }
+         const TGate & a_gate(circuit.getGates()[k]);
+         if(OUTPUT == a_gate.gateType)
+         {
+             // send to party (which need this gate) your share for this gate
+             m_parties_state[a_gate.party].m_aux.push_back(gateShareArr[a_gate.input1]);
+         }
+         else
+         {
+             lc_error("%s: gate %lu should be output; Perfect Secure failed.", __FUNCTION__, k);
+             return (m_run_flag = false);
+         }
     }
 
     for(size_t i = 0; i < m_parties; ++i)
@@ -716,10 +738,10 @@ bool psmpc_ac_gf28lt::inadj2_2_outpt()
     return true;
 }
 
-bool psmpc_ac_gf28lt::outpt_2_done()
+bool psmpc_ac_m31::outpt_2_done()
 {
     int counter = 0;
-    vector<GF28LT> x1(N);
+    vector<M31> x1(N);
 
     for(int k=M-numOfOutputGates ; k < M; k++)
     {
@@ -733,12 +755,11 @@ bool psmpc_ac_gf28lt::outpt_2_done()
             // my output: reconstruct received shares
             if (!checkConsistency(x1, T))
             {
-//                output += field->elementToString(interpolate(x1));
                 lc_error("%s: cheat check failed.", __FUNCTION__);
                 return (m_run_flag = false);
+            } else{
+                m_output += field->elementToString(interpolate(x1));
             }
-            else
-                m_output = field->elementToString(interpolate(x1));
         }
     }
 
@@ -755,7 +776,7 @@ bool psmpc_ac_gf28lt::outpt_2_done()
     return true;
 }
 
-void psmpc_ac_gf28lt::print_data() const
+void psmpc_ac_m31::print_data() const
 {
     for(size_t i = 0; i< m_parties; ++i)
     {
@@ -767,4 +788,45 @@ void psmpc_ac_gf28lt::print_data() const
         }
     }
 
+}
+
+void psmpc_ac_m31::do_send_and_recv(const vector< vector< byte > > & _2send, vector< vector< byte > > & _2recv)
+{
+    for (size_t i = 0; i < m_parties; ++i)
+    {
+        if(i == m_id) continue;
+        if (0 != m_cc->send(i, _2send[i].data(), _2send[i].size()))
+        {
+            lc_error("%s: comm client send() failed.", __FUNCTION__);
+            m_run_flag = false;
+        }
+        _2recv[i].clear();
+    }
+
+    bool recv_done;
+    do{
+        recv_done = true;
+        for (size_t i = 0; i < m_parties; ++i)
+        {
+            if(i == m_id) continue;
+
+            const size_t required_size =  _2send[i].size();
+            if(required_size > _2recv[i].size())
+            {
+                //get from peer as much as needed and available
+                party_t & peer(m_parties_state[i]);
+                size_t _2get = required_size - _2recv[i].size();
+                if(peer.m_data.size() < _2get) _2get = peer.m_data.size();
+                _2recv[i].insert(_2recv[i].end(), peer.m_data.begin(), peer.m_data.begin() + _2get);
+                peer.m_data.erase(peer.m_data.begin(), peer.m_data.begin() + _2get);
+            }
+
+            recv_done = recv_done && (required_size == _2recv[i].size());
+        }
+
+        if(!recv_done)
+            handle_comm_events();
+    }while(!recv_done);
+
+    _2recv[m_id] = _2send[m_id];
 }
