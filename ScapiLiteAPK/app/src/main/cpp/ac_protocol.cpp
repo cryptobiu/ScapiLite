@@ -3,33 +3,33 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
 #include <semaphore.h>
 
 #include <string>
 #include <vector>
 #include <list>
 
-#include <pthread.h>
-
 #include <android/log.h>
 
-#define lc_fatal(...) __android_log_print(ANDROID_LOG_FATAL,m_logcat.c_str(),__VA_ARGS__)
-#define lc_error(...) __android_log_print(ANDROID_LOG_ERROR,m_logcat.c_str(),__VA_ARGS__)
-#define lc_warn(...) __android_log_print(ANDROID_LOG_WARN,m_logcat.c_str(),__VA_ARGS__)
-#define lc_notice(...) __android_log_print(ANDROID_LOG_INFO,m_logcat.c_str(),__VA_ARGS__)
-#define lc_info(...) __android_log_print(ANDROID_LOG_INFO,m_logcat.c_str(),__VA_ARGS__)
-#define lc_debug(...) __android_log_print(ANDROID_LOG_DEBUG,m_logcat.c_str(),__VA_ARGS__)
+#define APPNAME "ScapiLite"
 
-#include <event2/event.h>
+#define lc_fatal(...) __android_log_print(ANDROID_LOG_FATAL,APPNAME,__VA_ARGS__)
+#define lc_error(...) __android_log_print(ANDROID_LOG_ERROR,APPNAME,__VA_ARGS__)
+#define lc_warn(...) __android_log_print(ANDROID_LOG_WARN,APPNAME,__VA_ARGS__)
+#define lc_notice(...) __android_log_print(ANDROID_LOG_INFO,APPNAME,__VA_ARGS__)
+#define lc_info(...) __android_log_print(ANDROID_LOG_INFO,APPNAME,__VA_ARGS__)
+#define lc_debug(...) __android_log_print(ANDROID_LOG_DEBUG,APPNAME,__VA_ARGS__)
 
 #include "comm_client_cb_api.h"
+#include "comm_client_factory.h"
 #include "ac_protocol.h"
 #include "comm_client.h"
-#include "cct_proxy_client.h"
 
-ac_protocol::ac_protocol(comm_client::cc_args_t * cc_args)
+
+ac_protocol::ac_protocol(comm_client_factory::client_type_t cc_type, comm_client::cc_args_t * cc_args)
 : m_logcat(cc_args->logcat), m_id(-1), m_parties(0), m_run_flag(false)
-, m_cc(new cct_proxy_client(cc_args))
+, m_cc( comm_client_factory::create_comm_client(cc_type, cc_args))
 {
  	int errcode = 0;
  	if(0 != (errcode = pthread_mutex_init(&m_q_lock, NULL)))
@@ -248,45 +248,6 @@ int ac_protocol::run_ac_protocol(const size_t id, const size_t parties, const ch
 	return 0;
 }
 
-/*
-bool ac_protocol::handle_comm_event()
-{
-	bool had_comm_evts = false;
-	comm_evt * pevt = NULL;
-	int errcode;
-	struct timespec to;
-	clock_gettime(CLOCK_REALTIME, &to);
-	to.tv_sec += 1;
-	if(0 == (errcode = pthread_mutex_timedlock(&m_q_lock, &to)))
-	{
-		if(!m_comm_q.empty())
-		{
-			pevt = *m_comm_q.begin();
-			m_comm_q.pop_front();
-		}
-
-		if(0 != (errcode = pthread_mutex_unlock(&m_q_lock)))
-		{
-			char errmsg[256];
-			lc_error("%s: pthread_mutex_unlock() failed with error %d : [%s].",
-					__FUNCTION__, errcode, strerror_r(errcode, errmsg, 256));
-			exit(__LINE__);
-		}
-	}
-	else
-	{
-		char errmsg[256];
-		lc_error("%s: pthread_mutex_timedlock() failed with error %d : [%s].",
-				__FUNCTION__, errcode, strerror_r(errcode, errmsg, 256));
-		exit(__LINE__);
-	}
-
-	had_comm_evts = (NULL != pevt);
-	handle_comm_event(pevt);
-	delete pevt;
-	return had_comm_evts;
-}
-*/
 bool ac_protocol::handle_comm_events()
 {
 	bool had_comm_evts = false;
@@ -321,6 +282,56 @@ bool ac_protocol::handle_comm_events()
 	return had_comm_evts;
 }
 
+bool ac_protocol::handle_a_comm_event()
+{
+	bool had_comm_evt = false;
+	comm_evt * evt = NULL;
+	int errcode;
+	struct timespec to;
+	clock_gettime(CLOCK_REALTIME, &to);
+	to.tv_sec += 1;
+	if(0 == (errcode = pthread_mutex_timedlock(&m_q_lock, &to)))
+	{
+		if(!m_comm_q.empty())
+		{
+			evt = *m_comm_q.begin();
+			m_comm_q.pop_front();
+		}
+
+		if(0 != (errcode = pthread_mutex_unlock(&m_q_lock)))
+		{
+			char errmsg[256];
+			lc_error("%s: pthread_mutex_unlock() failed with error %d : [%s].",
+					__FUNCTION__, errcode, strerror_r(errcode, errmsg, 256));
+			exit(__LINE__);
+		}
+	}
+	else
+	{
+		char errmsg[256];
+		lc_error("%s: pthread_mutex_timedlock() failed with error %d : [%s].",
+				__FUNCTION__, errcode, strerror_r(errcode, errmsg, 256));
+		exit(__LINE__);
+	}
+
+	if(NULL != evt)
+	{
+		had_comm_evt = true;
+		switch(evt->type)
+		{
+		case comm_evt_conn:
+			handle_conn_event(evt);
+			break;
+		case comm_evt_msg:
+			handle_msg_event(evt);
+			break;
+		default:
+			lc_error("%s: invalid comm event type %u", __FUNCTION__, evt->type);
+			break;
+		}
+	}
+	return had_comm_evt;
+}
 
 void ac_protocol::handle_comm_event(comm_evt * evt)
 {

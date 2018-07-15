@@ -16,13 +16,14 @@
 
 
 #include "comm_client.h"
+#include "comm_client_factory.h"
 #include "psmpc_ac_gf28lt.h"
 
 
 psmpc_ac_gf28lt::psmpc_ac_gf28lt(int argc, char* argv [],  comm_client::cc_args_t * args,
                                  JNIEnv *env, AAssetManager *assetManager)
 : ProtocolParty<GF28LT>(argc, argv, env, assetManager, false),
-  ac_protocol(args), m_no_buckets(-1) {}
+  ac_protocol(comm_client_factory::cc_tcp_proxy, args), m_no_buckets(-1) {}
 
 psmpc_ac_gf28lt::~psmpc_ac_gf28lt() {}
 
@@ -263,7 +264,7 @@ bool psmpc_ac_gf28lt::recv_aux(party_t &peer, const size_t required_elements)
 
 bool psmpc_ac_gf28lt::on_round_send_and_recv(party_t &peer)
 {
-    lc_debug("%s: peer %lu current state %lu; 2snd %lu; 2rcv %lu;",
+    lc_debug("%s: peer %lu current state %u; 2snd %lu; 2rcv %lu;",
              __FUNCTION__, peer.m_id, peer.m_current_state, peer.rnd_data_2send, peer.rnd_data_2recv);
     if(peer.rnd_data_sent < peer.rnd_data_2send)
     {
@@ -697,7 +698,7 @@ bool psmpc_ac_gf28lt::inadj2_2_outpt()
         }
         else
         {
-            lc_error("%s: gate %lu should be output; Perfect Secure failed.", __FUNCTION__, k);
+            lc_error("%s: gate %d should be output; Perfect Secure failed.", __FUNCTION__, k);
             return (m_run_flag = false);
         }
     }

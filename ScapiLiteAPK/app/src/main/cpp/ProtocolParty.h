@@ -567,20 +567,7 @@ bool ProtocolParty<FieldType>::broadcast(int party_id, vector<byte> myMessage, v
 template <class FieldType>
 void ProtocolParty<FieldType>::readMyInputs()
 {
-
-    //cout<<"inputs file" << inputsFile<<endl;
-    ifstream myfile;
-    int input;
-    int i =0;
-    myfile.open(inputsFile);
-    do {
-        myfile >> input;
-        myInputs[i] = input;
-        i++;
-    } while(!(myfile.eof()));
-    myfile.close();
-    //cout<<"after read inputs" <<endl;
-
+    myInputs[0] = 8;
 }
 
 template <class FieldType>

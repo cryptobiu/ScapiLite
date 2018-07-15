@@ -16,11 +16,13 @@
 
 
 #include "comm_client.h"
+#include "comm_client_factory.h"
 #include "psmpc_ac_m31.h"
 
 psmpc_ac_m31::psmpc_ac_m31(int argc, char* argv [],  comm_client::cc_args_t * args,
                            JNIEnv *env, AAssetManager *assetManager)
-: ProtocolParty<M31>(argc, argv, env, assetManager, false), ac_protocol(args), m_no_buckets(-1) {}
+: ProtocolParty<M31>(argc, argv, env, assetManager, false),
+  ac_protocol(comm_client_factory::cc_tcp_proxy, args), m_no_buckets(-1) {}
 
 psmpc_ac_m31::~psmpc_ac_m31() {}
 
@@ -698,8 +700,6 @@ bool psmpc_ac_m31::inadj2_2_outpt()
             gateShareArr[a_gate.output] = gateShareArr[a_gate.output] + db; // adjustment
         }
     }
-
-    //p23
 
     for(size_t i =0; i < m_parties;++i)
         m_parties_state[i].m_aux.clear();

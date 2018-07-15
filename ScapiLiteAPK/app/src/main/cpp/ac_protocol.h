@@ -1,8 +1,6 @@
 
 #pragma once
 
-#include "comm_client.h"
-
 class comm_client;
 
 class ac_protocol : public comm_client_cb_api
@@ -45,6 +43,7 @@ protected:
 	void report_party_comm(const size_t party_id, const bool comm);
 
 	bool handle_comm_events();
+    bool handle_a_comm_event();
 	void handle_comm_event(comm_evt * evt);
 	void handle_conn_event(comm_evt * evt);
 	void handle_msg_event(comm_evt * evt);
@@ -57,7 +56,7 @@ protected:
 	virtual int post_run() = 0;
 
 public:
-	ac_protocol(comm_client::cc_args_t * cc_args);
+	ac_protocol(comm_client_factory::client_type_t cc_type, comm_client::cc_args_t * cc_args);
 	virtual ~ac_protocol();
 
 	virtual int run_ac_protocol(const size_t id, const size_t parties, const char * conf_file, const size_t idle_timeout_seconds);

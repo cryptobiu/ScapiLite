@@ -54,7 +54,7 @@ public:
     virtual bool hasOffline() = 0;
     virtual void runOffline(){};
     virtual bool hasOnline() = 0;
-    virtual string runOnline(){};
+    virtual string runOnline(){ return ""; };
     vector<pair<string, string>> getArguments();
     CmdParser getParser();
 
