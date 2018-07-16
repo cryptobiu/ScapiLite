@@ -21,10 +21,7 @@
 #include "Protocol.h"
 #include "SecurityLevel.h"
 
-#define flag_print false
-#define flag_print_timings true
 #define flag_print_output false
-
 
 using namespace std;
 using namespace std::chrono;
@@ -44,7 +41,7 @@ protected:
 
     int N, M, T, m_partyId;
     int numOfInputGates, numOfOutputGates;
-    string inputsFile, outputFile;
+    string inputsFile;
     vector<FieldType> beta;
     HIM<FieldType> matrix_for_interpolate;
     HIM<FieldType> matrix_for_t;
@@ -55,7 +52,6 @@ protected:
     VDM<FieldType> matrix_vand;
     HIM<FieldType> m;
 
-    //Communication* comm;
     boost::asio::io_service io_service;
     vector<shared_ptr<ProtocolPartyData>>  parties;
 
@@ -69,10 +65,6 @@ protected:
     vector<FieldType> sharingBufInputsTElements; // prepared T-sharings (my shares)
     int shareIndex;
 
-    void printDataElements(const vector<vector<FieldType>> & BufsElements) const;
-    void printDataBytes(const char * label, const vector< vector< byte > > & BufsBytes) const;
-
-
     vector<int> myInputs;
     string s;
 
@@ -81,7 +73,6 @@ protected:
 public:
     ProtocolParty(int argc, char* argv [], JNIEnv *env, AAssetManager *assetManager, bool commOn=true);
     void split(const string &s, char delim, vector<string> &elems);
-    vector<string> split(const string &s, char delim);
 
 
     void roundFunctionSync(const vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int round);
@@ -240,30 +231,10 @@ public:
     bool checkConsistency(vector<FieldType>& x, int d);
 
     /**
-     * Process all additions which are ready.
-     * Return number of processed gates.
-     */
-    int processAdditions();
-
-
-    /**
-     * Process all subtractions which are ready.
-     * Return number of processed gates.
-     */
-    int processSubtractions();
-
-    /**
      * Process all multiplications which are ready.
      * Return number of processed gates.
      */
     int processMultiplications(HIM<FieldType> &m);
-
-    /**
-     * Process all random gates.
-     */
-    void processRandoms();
-
-    int processSmul();
 
     int processNotMult();
 
@@ -280,8 +251,6 @@ public:
      * The first (and only) element of the output vector is the secret.
      */
     FieldType interpolate(vector<FieldType> x);
-
-    FieldType tinterpolate(vector<FieldType> x);
 
     /**
      * Walk through the circuit and reconstruct output gates.
@@ -319,8 +288,7 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
 
     N = n;
     T = n/3 - 1;
-    this->inputsFile = this->getParser().getValueByKey(arguments, "inputFile");
-    this->outputFile = this->getParser().getValueByKey(arguments, "outputFile");
+    this->inputsFile = this->getParser().getValueByKey(arguments, "userInput");
     if(n%3 > 0)
     {
         T++;
@@ -343,9 +311,6 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
     auto t2 = high_resolution_clock::now();
 
     auto duration = duration_cast<milliseconds>(t2-t1).count();
-    if(flag_print_timings) {
-        cout << "time in milliseconds initializationPhase: " << duration << endl;
-    }
 }
 
 template <class FieldType>
@@ -405,13 +370,6 @@ bool ProtocolParty<FieldType>::broadcast(int party_id, vector<byte> myMessage, v
         }
     }
 
-    if(flag_print) {
-        cout << "recBufsdiff" << endl;
-        for (int i = 0; i < N; i++) {
-            //cout << i << "  " << recBufsdiff[i] << endl;
-        }
-    }
-
     vector<FieldType> X1(N);
     vector<FieldType> Y1(N);
 
@@ -436,26 +394,14 @@ bool ProtocolParty<FieldType>::broadcast(int party_id, vector<byte> myMessage, v
 
     index = 0;
 
-    if(flag_print) {
-        cout << "valBufs " <<endl;
-        for(int k = 0; k < count; k++)
-        {
-            cout << "valBufs " << k << " " << valBufs[k] << endl;
-        }
-    }
 
     // nr of buckets
     no_buckets = count / (N - T) + 1; // nr of buckets
 
 
     for(int i = 0; i < N; i++)
-    {
         sendBufsElements[i].resize(no_buckets);
-    }
 
-    if(flag_print) {
-        cout << " before the for " << '\n';}
-    cout <<__FUNCTION__ <<": NB22:  m_no_buckets = " << no_buckets << endl;
     for(int k = 0; k < no_buckets; k++)
     {
         for(int i = 0; i < N; i++)
@@ -473,43 +419,21 @@ bool ProtocolParty<FieldType>::broadcast(int party_id, vector<byte> myMessage, v
             }
         }
 
-        if(flag_print) {
-            for(int i = 0; i < N; i++)
-            {
-                cout << "X1[i]" << i << " " << field->elementToString(X1[i]) << endl;
-            } }
-
         // x1 contains (up to) N-T values from ValBuf
         mat.MatrixMult(X1, Y1); // no cheating: all parties have same y1
 
-        if(flag_print) {
-            cout << "X1[i] after mult" << endl;}
-
         // ‘‘Reconstruct’’ values towards some party (‘‘reconstruct’’ with degree 0)
-        if(flag_print) {
-            for(int i = 0; i < N; i++)
-            {
-                cout << "X1[i]" << i << " " << field->elementToString(X1[i])<< endl;
-            } }
-        for(int i = 0; i < N; i++) {
+
+        for(int i = 0; i < N; i++)
 
             sendBufsElements[i][k] = Y1[i];
-        }
+
         for(int i = 0; i < N; i++)
         {
             X1[i] = *(field->GetZero());
             Y1[i] = *(field->GetZero());
         }
     }
-
-    if(flag_print) {
-        cout << "index  2 time :" << index << '\n';
-
-        cout  << "before roundfunction3 " << endl;
-        for(int k=0; k< N; k++) {
-            // cout << k << "  " << buffers[k] << endl;
-        }}
-
 
     for(int i=0; i < N; i++)
     {
@@ -531,29 +455,20 @@ bool ProtocolParty<FieldType>::broadcast(int party_id, vector<byte> myMessage, v
         }
     }
 
-    if(flag_print) {
-        cout  << "after roundfunction3 " << endl;
-        for(int k=0; k< N; k++) {
-            //cout << k << "  " << recBufs2[k] << endl;
-        }
-
-        cout << "no_buckets  " << no_buckets << endl;}
     FieldType temp1;
-    cout <<__FUNCTION__ <<": NB23:  m_no_buckets = " << no_buckets << endl;
     // no cheating: all parties have same y1
     // ‘‘Reconstruct’’ values towards some party (‘‘reconstruct’’ with degree 0)
-    for(int k=0; k < no_buckets; k++) {
-        if(flag_print) {
-            cout << "fff  " << k<< endl;}
-        if(recBufs2Elements[0].size() > 0) {
+    for(int k=0; k < no_buckets; k++)
+    {
+        if(recBufs2Elements[0].size() > 0)
+        {
             temp1 = recBufs2Elements[0][k];
             //  arr.size()-1
-            for (int i = 1; i < N; i++) {
+            for (int i = 1; i < N; i++)
+            {
                 if(temp1 != recBufs2Elements[i][k])
                 {
                     // cheating detected!!!
-                    if(flag_print) {
-                        cout << "                 cheating" << endl;}
                     return false;
                 }
             }
@@ -567,7 +482,7 @@ bool ProtocolParty<FieldType>::broadcast(int party_id, vector<byte> myMessage, v
 template <class FieldType>
 void ProtocolParty<FieldType>::readMyInputs()
 {
-    myInputs[0] = 8;
+    myInputs[0] = stoi(inputsFile);
 }
 
 template <class FieldType>
@@ -587,52 +502,31 @@ void ProtocolParty<FieldType>::runOffline() {
 
     auto t1 = high_resolution_clock::now();
     if(RandomSharingForInputs() == false) {
-        if(flag_print) {
-            cout << "cheating!!!" << '\n';}
         return;
     }
     else {
-        if(flag_print) {
-            cout << "no cheating!!!" << '\n' << "finish preparationForInputs Phase" << '\n';}
     }
 
     auto t2 = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(t2-t1).count();
-    if(flag_print_timings) {
-        cout << "time in milliseconds preparationForInputsPhase: " << duration << endl;
-    }
+
     t1 = high_resolution_clock::now();
     if(preparationPhase() == false) {
-        if(flag_print) {
-            cout << "cheating!!!" << '\n';}
         return;
     }
     else {
-        if(flag_print) {
-            cout << "no cheating!!!" << '\n' << "finish Preparation Phase" << '\n';}
     }
     t2 = high_resolution_clock::now();
     duration = duration_cast<milliseconds>(t2-t1).count();
-    if(flag_print_timings) {
-        cout << "time in milliseconds preparationPhase: " << duration << endl;
-    }
+
 
     t1 = high_resolution_clock::now();
     if(inputPreparation() == false) {
-        cout << "cheating!!!" << '\n';
-        if(flag_print) {
-            cout << "cheating!!!" << '\n';}
         return;
     }
-    else {
-        if(flag_print) {
-            cout << "no cheating!!!" << '\n' << "finish Input Preparation" << '\n';}
-    }
+
     t2 = high_resolution_clock::now();
     duration = duration_cast<milliseconds>(t2-t1).count();
-    if(flag_print_timings) {
-        cout << "time in milliseconds inputPreparation: " << duration << endl;
-    }
 }
 
 /**
@@ -646,36 +540,10 @@ template <class FieldType>
 string ProtocolParty<FieldType>::runOnline() {
     string sss = "";
 
-    auto t1 = high_resolution_clock::now();
     inputAdjustment(sss/*, matrix_him*/);
-    auto t2 = high_resolution_clock::now();
-
-    auto duration = duration_cast<milliseconds>(t2-t1).count();
-
-    if(flag_print_timings) {
-        cout << "time in milliseconds inputAdjustment: " << duration << endl;
-    }
-    if(flag_print) {
-        cout << "after Input Adjustment " << '\n'; }
-
-    t1 = high_resolution_clock::now();
-
     computationPhase(m);
-    t2 = high_resolution_clock::now();
-
-    duration = duration_cast<milliseconds>(t2-t1).count();
-
-    if(flag_print_timings) {
-        cout << "time in milliseconds computationPhase: " << duration << endl;
-    }
-
     return outputPhase();
 
-    duration = duration_cast<milliseconds>(t2-t1).count();
-
-    if(flag_print_timings) {
-        cout << "time in milliseconds outputPhase: " << duration << endl;
-    }
 }
 
 template <class FieldType>
@@ -703,8 +571,6 @@ void ProtocolParty<FieldType>::computationPhase(HIM<FieldType> &m) {
 template <class FieldType>
 void ProtocolParty<FieldType>::inputAdjustment(string &diff)
 {
-
-//    cout<<"in input adjustment"<<endl;
     int input;
     int index = 0;
 
@@ -722,20 +588,11 @@ void ProtocolParty<FieldType>::inputAdjustment(string &diff)
             if (circuit.getGates()[k].party == m_partyId) {
                 input = myInputs[index];
                 index++;
-                if (flag_print) {
-                    cout << "input  " << input << endl;
-                }
+
                 // the value is gateValue[k], but should be input.
                 FieldType myinput = field->GetElement(input);
-                if (flag_print) {
-                    cout << "gateValueArr " << k << "   " << field->elementToString(gateValueArr[k]) << endl;
-                }
-
                 FieldType different = myinput - gateValueArr[k];
-
                 diffElements.push_back(different);
-
-
             }
         }
     }
@@ -749,38 +606,17 @@ void ProtocolParty<FieldType>::inputAdjustment(string &diff)
         field->elementToBytes(sendBufBytes.data() + (j * fieldByteSize), diffElements[j]);
     }
 
-    if(flag_print) {
-        cout << "try to print diff" << '\n';
-        cout << diff << '\n';}
 
     vector<vector<byte>> recBufsdiffBytes(N);
     vector<vector<FieldType>> recBufsdiffElements(N);
 
     //adjust the size of the difference we need to recieve
-    for(int i=0; i<N; i++){
-
-        //cout<< "the size of diff for " << i << " = " <<sizes[i]<<endl;
+    for(int i=0; i<N; i++)
         recBufsdiffBytes[i].resize(sizes[i]*fieldByteSize);
-    }
 
     // Broadcast the difference between GateValue[k] to x.
-    if(broadcast(m_partyId, sendBufBytes, recBufsdiffBytes, matrix_him) == false) {
-        if(flag_print) {
-            cout << "cheating!!!" << '\n';}
+    if(broadcast(m_partyId, sendBufBytes, recBufsdiffBytes, matrix_him) == false)
         return;
-    }
-    else {
-        if(flag_print) {
-            cout << "no cheating!!!" <<  '\n' << "finish Broadcast" << '\n';}
-    }
-
-    if(flag_print) {
-
-        cout << "recBufsdiff" << endl;
-        for (int k = 0; k < N; k++) {
-            // cout << "recBufsdiff" << k << "  " << recBufsdiff[k] << endl;
-        }
-    }
 
     // handle after broadcast
     FieldType db;
@@ -878,19 +714,6 @@ void ProtocolParty<FieldType>::initializationPhase()
     matrix_for_2t.allocate(N - 1 - 2*T, 2*T + 1, field); // slices, only positions from 0..d
     //matrix_for_2t.InitHIMByVectors(alpha_until_2t, alpha_from_2t);
     matrix_for_2t.InitHIMVectorAndsizes(alpha, 2*T + 1, N-(2*T +1));
-
-
-
-    if(flag_print){
-        cout<< "matrix_for_t : " <<endl;
-        matrix_for_t.Print();
-
-        cout<< "matrix_for_2t : " <<endl;
-        matrix_for_2t.Print();
-
-    }
-
-
 }
 
 /**
@@ -906,9 +729,6 @@ template <class FieldType>
 void ProtocolParty<FieldType>::publicReconstruction(vector<FieldType> &myShares, int &count, int d, vector<FieldType> &valBuf, HIM<FieldType> &m)
 {
     int no_buckets = count / (N-T) + 1;
-    if(flag_print) {
-        cout << "public reconstruction" << endl;
-        cout << "no buckets" << no_buckets << endl; }
     FieldType x;
 
     vector<FieldType> x1(N);
@@ -929,11 +749,7 @@ void ProtocolParty<FieldType>::publicReconstruction(vector<FieldType> &myShares,
         sendBufsElements[i].resize(no_buckets);
         sendBufsElements2[i].resize(no_buckets);
     }
-    if(flag_print) {
-        for (int i = 0; i < myShares.size(); i++) {
-            cout << "myShares " << i << "   " << myShares[i] << endl;
-        }
-    }
+
     // init x to be vector of degree-d (d=2*t) shares of n−t secret
     for(int k=0; k < no_buckets; k++)
     {
@@ -965,13 +781,6 @@ void ProtocolParty<FieldType>::publicReconstruction(vector<FieldType> &myShares,
         }
     }
 
-    if(flag_print) {
-        cout << "sendBufs[i]" << endl;
-        for (int i = 0; i < N; i++) {
-            //cout << sendBufs[i] << endl;
-        }
-    }
-
     int fieldByteSize = field->getElementSizeInBytes();
 
     for(int i=0; i < N; i++)
@@ -983,45 +792,13 @@ void ProtocolParty<FieldType>::publicReconstruction(vector<FieldType> &myShares,
         }
     }
 
+    roundFunctionSync(sendBufsBytes, recBufsBytes,1);
 
-    //cout<<"before round function 1"<<endl;
-    //comm->roundfunctionI(sendBufsBytes, recBufsBytes,1);
-    //roundFunctionSync(sendBufsBytes, recBufsBytes,1);
-
-    printDataBytes("send", sendBufsBytes);
-
-    do_send_and_recv(sendBufsBytes, recBufsBytes);
-
-    printDataBytes("recv", recBufsBytes);
-
-    //cout<<"after round function 1"<<endl;
-    if(flag_print) {
-        cout << "recBufs[i]" << endl;
-        for(int i = 0; i < N; i++)
-        {
-            //cout << recBufs[i] << endl;
-        }}
-    //   cout << "after roundfunction1" << '\n';
     for(int k=0; k < no_buckets; k++) {
 
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < N; i++)
 
             x1[i] = field->bytesToElement(recBufsBytes[i].data() + (k*fieldByteSize));
-        }
-        if(flag_print) {
-            cout << "x1[i]" << endl;
-            for(int i = 0; i < N; i++)
-            {
-                cout << field->elementToString(x1[i]) << endl;
-            } }
-
-        // checking that {xj}i are d-consistent and interpolate them to x j .
-        if (!checkConsistency(x1, d)) {
-            // halt
-            // cheating detected
-            if(flag_print) {
-                cout << "cheating" << '\n';}
-        }
 
         // interpolate {xj}i to x
         x = interpolate(x1);
@@ -1033,8 +810,6 @@ void ProtocolParty<FieldType>::publicReconstruction(vector<FieldType> &myShares,
         }
     }
 
-//    printData(sendBufsElements2);
-
     for(int i=0; i < N; i++)
     {
         sendBufs2Bytes[i].resize(no_buckets*fieldByteSize );
@@ -1044,24 +819,7 @@ void ProtocolParty<FieldType>::publicReconstruction(vector<FieldType> &myShares,
         }
     }
 
-
-
-    if(flag_print) {
-        cout << "sendBufs2[i]" << endl;
-        for(int i = 0; i < N; i++)
-        {
-            //cout << sendBufs2[i] << endl;
-        } }
-    //comm->roundfunctionI(sendBufs2Bytes, recBufs2Bytes,8);
-    //roundFunctionSync(sendBufs2Bytes, recBufs2Bytes,8);
-    do_send_and_recv(sendBufs2Bytes, recBufs2Bytes);
-
-    if(flag_print) {
-        cout << "recBufs2[i]" << endl;
-        for(int i = 0; i < N; i++)
-        {
-            //cout << recBufs2[i] << endl;
-        } }
+    roundFunctionSync(sendBufs2Bytes, recBufs2Bytes,8);
     int index = 0;
     for(int k=0; k < no_buckets; k++) {
         for (int i = 0; i < N; i++) {
@@ -1071,15 +829,6 @@ void ProtocolParty<FieldType>::publicReconstruction(vector<FieldType> &myShares,
 
         // checking that (Xn−t,...,Xn) = M*(X1,...,Xn−t)
         m.MatrixMult(x1, y1);
-
-        for (int i = 0; i < T; i++) {
-            if(x1[N-T+i] != y1[i])
-            {
-                if(flag_print) {
-                    // halt !
-                    cout << "                  cheating" << '\n'; }
-            }
-        }
 
         for (int i = 0; i < N-T; i++) {
             if(k*(N-T)+i < count)
@@ -1154,34 +903,17 @@ bool ProtocolParty<FieldType>::preparationPhase(/*VDM<FieldType> &matrix_vand, H
         // prepare shares to be sent
         for(int i=0; i < N; i++)
         {
-            //cout << "y1[ " <<i<< "]" <<y1[i] << endl;
+
             sendBufsElements[i][2*k] = y1[i];
             sendBufsElements[i][2*k+1] = y2[i];
         }
 
     }//end print one
 
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < sendBufsElements[0].size(); k++) {
-
-                // cout << "before roundfunction4 send to " <<i <<" element: "<< k << " " << sendBufsElements[i][k] << endl;
-            }
-        }
-    }
 
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>( t2 - t1 ).count();
-    //cout << "generate random degree-T polynomial took : " <<duration<<" ms"<<endl;
 
-    if(flag_print) {
-        cout << "sendBufs" << endl;
-        cout << "N" << N << endl;
-        cout << "T" << T << endl;
-
-
-
-    }
 //
     int fieldByteSize = field->getElementSizeInBytes();
     for(int i=0; i < N; i++)
@@ -1197,31 +929,6 @@ bool ProtocolParty<FieldType>::preparationPhase(/*VDM<FieldType> &matrix_vand, H
     roundFunctionSync(sendBufsBytes, recBufsBytes,4);
     high_resolution_clock::time_point t4 = high_resolution_clock::now();
     auto duration2 = duration_cast<milliseconds>( t4 - t3 ).count();
-    //cout << "roundfunctionI took : " <<duration2<<" ms"<<endl;
-
-
-
-
-
-
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < sendBufsBytes[0].size(); k++) {
-
-                cout << "roundfunction4 send to " <<i <<" element: "<< k << " " << (int)sendBufsBytes[i][k] << endl;
-            }
-        }
-    }
-
-    //cout << endl;
-
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < recBufsBytes[0].size(); k++) {
-                cout << "roundfunction4 receive from " <<i <<" element: "<< k << " " << (int) recBufsBytes[i][k] << endl;
-            }
-        }
-    }
 
 
     /**
@@ -1242,7 +949,6 @@ bool ProtocolParty<FieldType>::preparationPhase(/*VDM<FieldType> &matrix_vand, H
 
     int fieldBytesSize = field->getElementSizeInBytes();
 
-    cout << __FUNCTION__ <<" : NB20:  no_buckets = "<< no_buckets << endl;
 
     // x1 : used for the N degree-t sharings
     // x2 : used for the N degree-2t sharings
@@ -1280,37 +986,19 @@ bool ProtocolParty<FieldType>::preparationPhase(/*VDM<FieldType> &matrix_vand, H
     for(int i=0; i < N; i++)
     {
         sendBufsBytes[i].resize(sendBufsElements[i].size()*fieldByteSize);
-        //cout<< "size of sendBufs1Elements["<<i<<" ].size() is " << sendBufs1Elements[i].size() <<"myID =" <<  m_partyId<<endl;
         recBufsBytes[i].resize(sendBufsElements[m_partyId].size()*fieldByteSize);
         for(int j=0; j<sendBufsElements[i].size();j++) {
             field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
         }
     }
 
-    if(flag_print) {
-        cout << "before round" << endl;}
-    //comm->roundfunctionI(sendBufs1Bytes, recBufsBytes,5);
-
-
-    t3 = high_resolution_clock::now();
-    //comm->roundfunctionI(sendBufsBytes, recBufsBytes,4);
     roundFunctionSync(sendBufsBytes, recBufsBytes,5);
-    t4 = high_resolution_clock::now();
-    duration2 = duration_cast<milliseconds>( t4 - t3 ).count();
-    //cout << "roundfunction 5 took : " <<duration2<<" ms"<<endl;
 
-
-
-    //cout<<"after round function 5"<<endl;
-    if(flag_print) {
-        cout << "after round" << endl;}
     int count = no_buckets * (2*T) / N; // nr of sharings *I* have to check
     // got one in the last round
     if(no_buckets * (2*T)%N > m_partyId) { // maybe -1
         count++;
     }
-
-    cout << __FUNCTION__ <<" : NB21:  no_buckets = "<< no_buckets << endl;
 
     for(int k=0; k < count; k++) {
         for (int i = 0; i < N; i++) {
@@ -1329,18 +1017,10 @@ bool ProtocolParty<FieldType>::preparationPhase(/*VDM<FieldType> &matrix_vand, H
         {
             x_until_d[i] = *(field->GetZero());
         }
-        if(flag_print) {
-
-            //  cout <<"k "<<k<< "tinterpolate(x1).toString()  " << tinterpolate(x_until_d).toString() << endl;
-            cout << "k " << k << "interpolate(x1).toString()  " << field->elementToString(interpolate(x1)) << endl;
-            cout << "k " << k << "interpolate(x2).toString()  " << field->elementToString(interpolate(x2)) << endl;
-        }
         // Check that x1 is t-consistent and x2 is 2t-consistent and secret is the same
         if(!checkConsistency(x1,T) || !checkConsistency(x2,2*T) ||
            (interpolate(x1)) != (interpolate(x2)))  {
             // cheating detected, abort
-            if(flag_print) {
-                cout << "k" << k<< endl;}
             return false;
         }
     }
@@ -1364,8 +1044,6 @@ bool ProtocolParty<FieldType>::RandomSharingForInputs()
     // the number of buckets (each bucket requires one double-sharing
     // from each party and gives N-2T random double-sharings)
     int no_buckets = (no_random / (N-2*T))+1;
-
-    cout << __FUNCTION__ <<" : NB18:  no_buckets = "<< no_buckets << endl;
 
     //sharingBufTElements.resize(no_buckets*(N-2*T)); // my shares of the double-sharings
     //sharingBuf2TElements.resize(no_buckets*(N-2*T)); // my shares of the double-sharings
@@ -1406,22 +1084,6 @@ bool ProtocolParty<FieldType>::RandomSharingForInputs()
     }//end print one
 
 
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < sendBufsElements[0].size(); k++) {
-            }
-        }
-    }
-
-    high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    auto duration = duration_cast<milliseconds>( t2 - t1 ).count();
-
-    if(flag_print) {
-        cout << "sendBufs" << endl;
-        cout << "N" << N << endl;
-        cout << "T" << T << endl;
-    }
-
     int fieldByteSize = field->getElementSizeInBytes();
     for(int i=0; i < N; i++)
     {
@@ -1434,22 +1096,6 @@ bool ProtocolParty<FieldType>::RandomSharingForInputs()
     roundFunctionSync(sendBufsBytes, recBufsBytes,4);
     high_resolution_clock::time_point t4 = high_resolution_clock::now();
     auto duration2 = duration_cast<milliseconds>( t4 - t3 ).count();
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < sendBufsBytes[0].size(); k++) {
-
-                cout << "roundfunction4 send to " <<i <<" element: "<< k << " " << (int)sendBufsBytes[i][k] << endl;
-            }
-        }
-    }
-
-    if(flag_print) {
-        for (int i = 0; i < N; i++) {
-            for (int k = 0; k < recBufsBytes[0].size(); k++) {
-                cout << "roundfunction4 receive from " <<i <<" element: "<< k << " " << (int) recBufsBytes[i][k] << endl;
-            }
-        }
-    }
 
 
     /**
@@ -1494,24 +1140,12 @@ bool ProtocolParty<FieldType>::RandomSharingForInputs()
         }
     }
 
-    if(flag_print)
-        cout << "before round" << endl;
-
-    t3 = high_resolution_clock::now();
-    roundFunctionSync(sendBufsBytes, recBufsBytes,5);
-    t4 = high_resolution_clock::now();
-    duration2 = duration_cast<milliseconds>( t4 - t3 ).count();
-
-    if(flag_print) {
-        cout << "after round" << endl;}
     int count = no_buckets * (2*T) / N; // nr of sharings *I* have to check
     // got one in the last round
     if(no_buckets * (2*T)%N > m_partyId) { // maybe -1
         count++;
     }
 
-    cout << __FUNCTION__ <<" : NB19:  no_buckets = "<< no_buckets << endl;
-    cout << __FUNCTION__ <<" : NB19:  count = "<< count << endl;
     {
         vector<vector<FieldType>> BufsElement(N);
         for (int i = 0; i < N; i++)
@@ -1540,14 +1174,10 @@ bool ProtocolParty<FieldType>::RandomSharingForInputs()
         {
             x_until_d[i] = *(field->GetZero());
         }
-        if(flag_print) {
-            cout << "k " << k << "interpolate(x1).toString()  " << field->elementToString(interpolate(x1)) << endl;
-        }
+
         // Check that x1 is t-consistent and x2 is 2t-consistent and secret is the same
         if(!checkConsistency(x1,T) )  {
             // cheating detected, abort
-            if(flag_print) {
-                cout << "k" << k<< endl;}
             return false;
         }
     }
@@ -1580,13 +1210,6 @@ bool ProtocolParty<FieldType>::inputPreparation()
         sendBufsElements[i].push_back(gateShareArr[circuit.getGates()[k].output]);
 
     }
-    if(flag_print) {
-        cout << "sendBufs[i] in input preperation" << endl;
-        for (int i = 0; i < N; i++) {
-            //cout << sendBufs[i] << endl;
-        }
-    }
-
 
     int fieldByteSize = field->getElementSizeInBytes();
 
@@ -1615,21 +1238,6 @@ bool ProtocolParty<FieldType>::inputPreparation()
     }
 
 
-    if(flag_print) {
-        for(int k = 0; k < recBufsElements[0].size(); k++) {
-
-            //cout << "roundfunction6 recBufs" << k << " " << recBufsElements[0][k] << endl;
-        } }
-
-    //cout << endl;
-
-    if(flag_print) {
-        for(int k = 0; k < sendBufsElements[0].size(); k++) {
-
-            //cout << "roundfunction6 recBufs" << k << " " << sendBufsElements[0][k] << endl;
-        } }
-
-
     int counter = 0;
     // reconstruct my random input values
     for(int k = 0; k < numOfInputGates; k++) {
@@ -1648,8 +1256,6 @@ bool ProtocolParty<FieldType>::inputPreparation()
             secret = interpolate(x1);
 
             gateValueArr[k] = secret;
-            if(flag_print) {
-                cout << "           the secret is " << field->elementToString(secret) << endl;}
         }
     }
 
@@ -1829,8 +1435,6 @@ int ProtocolParty<FieldType>::processMultiplications(HIM<FieldType> &m)
     {
         return count;
     }
-    if(flag_print) {
-        cout <<"index for publicReconstruction " << index << '\n'; }
 
     // reconstruct the differences into valBuf
     publicReconstruction(ReconsBuf, index, 2*T, valBuf, m);
@@ -1841,8 +1445,6 @@ int ProtocolParty<FieldType>::processMultiplications(HIM<FieldType> &m)
         // its a multiplication which not yet processed and ready
         if(circuit.getGates()[k].gateType == MULT)
         {
-            if(flag_print) {
-                cout << "indexForValBuf " << indexForValBuf << endl;}
             d = valBuf[indexForValBuf];  // the difference
             indexForValBuf--;
             gateShareArr[circuit.getGates()[k].output] = gateShareArr[circuit.getGates()[k].output] + d; // the adjustment
@@ -1912,15 +1514,10 @@ string ProtocolParty<FieldType>::outputPhase()
             field->elementToBytes(sendBufsBytes[i].data() + (j * fieldByteSize), sendBufsElements[i][j]);
         }
     }
-
-    //comm->roundfunctionI(sendBufsBytes, recBufBytes,7);
     roundFunctionSync(sendBufsBytes, recBufBytes,7);
 
-
-
     int counter = 0;
-    if(flag_print) {
-        cout << "endnend" << endl;}
+
     for(int k=M-numOfOutputGates ; k < M; k++) {
         if(circuit.getGates()[k].gateType == OUTPUT && circuit.getGates()[k].party == m_partyId)
         {
@@ -1934,8 +1531,6 @@ string ProtocolParty<FieldType>::outputPhase()
             if (!checkConsistency(x1, T))
             {
                 // someone cheated!
-                if(flag_print) {
-                    cout << "cheating!!!" << '\n';}
                 return "Error";
             }
             if(flag_print_output){
@@ -2068,52 +1663,5 @@ ProtocolParty<FieldType>::~ProtocolParty()
     io_service.stop();
 }
 
-template <class FieldType>
-void ProtocolParty<FieldType>::printDataElements(const vector<vector<FieldType>> & BufsElements) const
-{
-    char buffer[128];
-    snprintf(buffer, 128, "prt%dprt.log", m_partyId);
-    FILE* pf = fopen(buffer, "a");
-    if(NULL!= pf)
-    {
-        for(size_t i = 0; i< N; ++i)
-        {
-            snprintf(buffer, 128, "%s party %lu aux size %lu\n", __FUNCTION__,i, BufsElements[i].size());
-            fputs(buffer, pf);
-            for (size_t j = 0; j < BufsElements[i].size(); ++j)
-            {
-                string ___element = field->elementToString(BufsElements[i][j]);
-                snprintf(buffer, 128, "%s party %lu aux[%lu]=%s\n", __FUNCTION__, i, j, ___element.c_str());
-                fputs(buffer, pf);
-            }
-        }
-        fclose(pf);
-    }
-}
-
-
-template <class FieldType>
-void ProtocolParty<FieldType>::printDataBytes(const char * label, const vector< vector< byte > > & BufsBytes) const
-{
-
-    char buffer[1024];
-    snprintf(buffer, 1024, "prt%dprt.log", m_partyId);
-    FILE* pf = fopen(buffer, "a");
-    if(NULL!= pf)
-    {
-        for (size_t i = 0; i < N; ++i)
-        {
-            std::stringstream ss;
-            ss << std::hex << std::setfill('0');
-
-            for(size_t j = 0; j < BufsBytes[i].size(); ++j)
-                ss << std::setw(2) << static_cast<unsigned>(BufsBytes[i][j]);
-
-            snprintf(buffer, 1024, "%s %s[%lu]=<%s>\n", __FUNCTION__, label, i, ss.str().c_str());
-            fputs(buffer, pf);
-        }
-        fclose(pf);
-    }
-}
 
 #endif //SCAPILITEAPK_PROTOCOLPARTY_H

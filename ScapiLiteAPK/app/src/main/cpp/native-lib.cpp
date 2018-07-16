@@ -43,7 +43,7 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
         jobject assetManager,
         jstring partyId,
         jstring partiesNumber,
-        jstring inputFile,
+        jstring inputVal,
         jstring outputFile,
         jstring circuitFile,
         jstring fieldType,
@@ -66,8 +66,8 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     argv[10] = (char *) env->GetStringUTFChars(partiesNumber, 0);
     argv[11] = (char *) "partiesFile";
     argv[12] = (char *) "parties.conf";
-    argv[13] = (char *) "inputFile";
-    argv[14] = (char *) env->GetStringUTFChars(inputFile, 0);
+    argv[13] = (char *) "userInput";
+    argv[14] = (char *) env->GetStringUTFChars(inputVal, 0);
     argv[15] = (char *) "outputFile";
     argv[16] = (char *) env->GetStringUTFChars(outputFile, 0);
     argv[17] = (char *) "NG";
