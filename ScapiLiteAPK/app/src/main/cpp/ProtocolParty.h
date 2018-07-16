@@ -323,12 +323,6 @@ void ProtocolParty<FieldType>::split(const string &s, char delim, vector<string>
     }
 }
 
-template <class FieldType>
-vector<string> ProtocolParty<FieldType>::split(const string &s, char delim) {
-    vector<string> elems;
-    split(s, delim, elems);
-    return elems;
-}
 
 /**
  * Protocol Broadcast:
@@ -1454,28 +1448,6 @@ int ProtocolParty<FieldType>::processMultiplications(HIM<FieldType> &m)
     return count;
 }
 
-
-/**
- * the Function process all multiplications which are ready.
- * @return the number of processed gates.
- */
-template <class FieldType>
-void ProtocolParty<FieldType>::processRandoms()
-{
-    FieldType r1;
-    //vector<string> arr = {};
-    for(int k = (numOfInputGates - 1); k < (M - numOfOutputGates); k++)
-    {
-        if(circuit.getGates()[k].gateType == RANDOM)
-        {
-
-            r1 = sharingBufTElements[shareIndex];
-            shareIndex++;
-
-            gateShareArr[circuit.getGates()[k].output] = r1;
-        }
-    }
-}
 
 /**
  * the function Walk through the circuit and reconstruct output gates.
