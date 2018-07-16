@@ -72,7 +72,6 @@ protected:
 
 public:
     ProtocolParty(int argc, char* argv [], JNIEnv *env, AAssetManager *assetManager, bool commOn=true);
-    void split(const string &s, char delim, vector<string> &elems);
 
 
     void roundFunctionSync(const vector<vector<byte>> &sendBufs, vector<vector<byte>> &recBufs, int round);
@@ -312,17 +311,6 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
 
     auto duration = duration_cast<milliseconds>(t2-t1).count();
 }
-
-template <class FieldType>
-void ProtocolParty<FieldType>::split(const string &s, char delim, vector<string> &elems) {
-    stringstream ss;
-    ss.str(s);
-    string item;
-    while (getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-}
-
 
 /**
  * Protocol Broadcast:
