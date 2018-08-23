@@ -33,10 +33,9 @@ wget https://gmplib.org/download/gmp/gmp-6.1.2.tar.lz
 tar xf gmp-6.1.2.tar.lz
 cd gmp-6.1.2
 CC_FOR_BUILD=/usr/bin/gcc ABI=standard emconfigure ./configure \
-  --build i686-pc-linux-gnu --host none --disable-assembly --enable-cxx \
-  --prefix=${HOME}/opt
+  --build i686-pc-linux-gnu --disable-assembly --enable-cxx
 make -j 6
-make install
+sudo make install
 cd ..
 
 #### ntl 10.5.0
@@ -57,7 +56,7 @@ cd ntl-10.5.0
       * `mkdir -p gmp-6.1.2-for-ntl`
       * `tar xf gmp-6.1.2.tar.lz -C gmp-6.1.2-for-ntl`
       * `cd gmp-6.1.2-for-ntl`
-      * `./configure --prefix=$HOME/optnojs --disable-assembly --build=none --host=none`
+      * `./configure --prefix=$HOME/optnojs --disable-assembly --build=none`
       * Edit config.h:
         * `comment: #define HAVE_OBSTACK_VPRINTF 1`
         * `comment: #define HAVE_QUAD_T 1`
