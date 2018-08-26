@@ -12,7 +12,6 @@
 #include "ProtocolParty.h"
 #include "comm_client.h"
 #include "comm_client_factory.h"
-#include "psmpc_ac_m31.h"
 
 using namespace std;
 using namespace boost;
@@ -74,13 +73,7 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     argv[18] = (char *) env->GetStringUTFChars(NG, 0);
     argv[19] = NULL;
 
-    comm_client::cc_args_t cc_args;
-    cc_args.logcat = "psmpc";
-    cc_args.proxy_addr = "34.239.19.87";
-    cc_args.proxy_port = (u_int16_t) 9000 + atoi(argv[8]);
-
-    psmpc_ac_m31 ps(17, argv, &cc_args, env, assMgr);
-    ps.run_ac_protocol((size_t) stoi(argv[8]), (size_t) stoi(argv[10]), argv[12], 180);
-    string output = ps.get_output();
+    ProtocolParty<ZpMersenneIntElement> protocol(20, argv, env, assMgr);
+    string output = protocol.run();
     return env->NewStringUTF(output.c_str());
 }
