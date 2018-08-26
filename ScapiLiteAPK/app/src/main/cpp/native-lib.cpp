@@ -13,6 +13,10 @@
 #include "comm_client.h"
 #include "comm_client_factory.h"
 
+#include <android/log.h>
+
+#define APPNAME "ScapiLite"
+
 using namespace std;
 using namespace boost;
 
@@ -46,11 +50,11 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
         jstring outputFile,
         jstring circuitFile,
         jstring fieldType,
-        jstring internalIterationsNumber,
-        jstring NG) {
+        jstring internalIterationsNumber) {
+    __android_log_print(ANDROID_LOG_DEBUG, APPNAME, "%s: Start native code", __FUNCTION__);
     AAssetManager *assMgr = AAssetManager_fromJava(env, assetManager);
 
-    char *argv[20];
+    char *argv[18];
 
     argv[0] = (char *) "PerfectSecureMPC";
     argv[1] = (char *) "circuitFile";
@@ -65,15 +69,15 @@ Java_crypto_cs_biu_scapilite_ProtocolActivity_protocolMain(
     argv[10] = (char *) env->GetStringUTFChars(partiesNumber, 0);
     argv[11] = (char *) "partiesFile";
     argv[12] = (char *) "parties.conf";
-    argv[13] = (char *) "userInput";
+    argv[13] = (char *) "inputFile";
     argv[14] = (char *) env->GetStringUTFChars(inputVal, 0);
     argv[15] = (char *) "outputFile";
     argv[16] = (char *) env->GetStringUTFChars(outputFile, 0);
-    argv[17] = (char *) "NG";
-    argv[18] = (char *) env->GetStringUTFChars(NG, 0);
-    argv[19] = NULL;
+    argv[17] = NULL;
 
-    ProtocolParty<ZpMersenneIntElement> protocol(20, argv, env, assMgr);
+    __android_log_print(ANDROID_LOG_DEBUG, APPNAME, "%s: Before ctor", __FUNCTION__);
+    ProtocolParty<ZpMersenneIntElement> protocol(17, argv, env, assMgr);
+    __android_log_print(ANDROID_LOG_DEBUG, APPNAME, "%s: After ctor", __FUNCTION__);
     string output = protocol.run();
     return env->NewStringUTF(output.c_str());
 }

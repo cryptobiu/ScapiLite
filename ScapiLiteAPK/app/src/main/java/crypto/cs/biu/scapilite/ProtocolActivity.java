@@ -16,6 +16,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import crypto.cs.biu.scapilite.model.MatrixResponse;
@@ -53,19 +54,6 @@ public class ProtocolActivity extends AsyncTask<String, Void, String>
         //hardcoded in the lib
         String proxyAddress = "";
 
-
-//        log("doInBackground pollID" + arg0[0]);
-//        jobject assetManager,
-//        jstring partyId,
-//        jstring partiesNumber,
-//        jstring inputFile,
-//        jstring outputFile,
-//        jstring circuitFile,
-//        jstring fieldType,
-//        jstring internalIterationsNumber,
-//        jstring NG) {
-
-
         log("callingTheProtocolMain _manager= " + _manager);
         log("callingTheProtocolMain PartyID= " + matrixResponse.getPartyID());
         log("callingTheProtocolMain PartiesNumber= " + matrixResponse.getPartiesNumber());
@@ -76,14 +64,19 @@ public class ProtocolActivity extends AsyncTask<String, Void, String>
         log("callingTheProtocolMain circuitContent= " + circuitContent);
         log("callingTheProtocolMain FieldType= " + matrixResponse.getFieldType());
         log("callingTheProtocolMain InternalIterationsNumber= " + matrixResponse.getInternalIterationsNumber());
-        log("callingTheProtocolMain NG= " + matrixResponse.getNG());
 
 
         String output = protocolMain(_manager, matrixResponse.getPartyID(), matrixResponse.getPartiesNumber(), inputAnswer,
                 matrixResponse.getOutputFile(), circuitContent,
-                matrixResponse.getFieldType(), matrixResponse.getInternalIterationsNumber(), matrixResponse.getNG());
+                matrixResponse.getFieldType(), matrixResponse.getInternalIterationsNumber());
 
-        log("callingTheProtocolMain OUTPUT= " + output);
+        ArrayList<String> wordArrayList = new ArrayList<>();
+        for(String word : output.split(" "))
+            wordArrayList.add(word);
+
+        log("Poll stats are :\navg:" + Integer.parseInt(wordArrayList.get(0)) /
+                        Integer.parseInt(matrixResponse.getPartiesNumber())
+                        + "\nstd:" + wordArrayList.get(1));
 
 
         if (output != null && !output.trim().equals(""))
@@ -100,7 +93,7 @@ public class ProtocolActivity extends AsyncTask<String, Void, String>
 
     public native String protocolMain(AssetManager assetManager, String partyId, String partiesNumber,
                                       String inputFile, String outputFile, String circuitFile,
-                                      String fieldType, String internalIterationsNumber, String NG);
+                                      String fieldType, String internalIterationsNumber);
 
     @Override
     protected void onPostExecute(String result)
@@ -110,48 +103,6 @@ public class ProtocolActivity extends AsyncTask<String, Void, String>
         sendNotification(result);
         super.onPostExecute(result);
     }
-
-//    public native void protocolMain(AssetManager assetManager, String partyId, String partiesNumber,
-//                                    String inputFile, String outputFile, String circuitFile,
-//                                    String proxyAddress, String fieldType,
-//                                    String internalIterationsNumber, String NG, String filesPath);
-
-
-//    protocolMain(
-//            JNIEnv *env,
-//            jobject obj /* this */,
-//            jobject assetManager,
-//            jstring partyId, jstring partiesNumber,
-//            jstring inputFile, jstring outputFile, jstring circuitFile,
-//            jstring proxyAddress, jstring fieldType,
-//            jstring internalIterationsNumber, jstring NG, jstring filesPath)
-
-
-//    AssetManager _manager;
-//    String _partyId;
-//
-//    public ProtocolActivity(Context context, AssetManager m, String partyId)
-//    {
-//        this.context = context;
-//        _manager = m;
-//        _partyId = partyId;
-//    }
-
-//    @Override
-//    public Void doInBackground(Void... arg0)
-//    {
-//        log("AlarmReceiver1 ProtocolActivity executing1");
-//
-//        Toast.makeText(context, "protocolMain started ", Toast.LENGTH_SHORT).show();
-////        protocolMain(_manager, _partyId, Environment.getExternalStorageDirectory().getAbsolutePath());
-//
-//        log("AlarmReceiver1 ProtocolActivity executing2");
-//
-//        return null;
-//    }
-
-//    public native void protocolMain(AssetManager assetManager, String partyId, String filesPath);
-
 
     private void sendNotification(String messageBody)
     {

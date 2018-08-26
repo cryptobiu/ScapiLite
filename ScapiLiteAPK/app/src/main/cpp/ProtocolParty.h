@@ -37,7 +37,6 @@ void init_log(const char * a_log_file, const char * a_log_dir,
 
 #define flag_print false
 #define flag_print_timings true
-#define flag_print_output true
 
 
 using namespace std;
@@ -360,7 +359,6 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
                                         JNIEnv *env, AAssetManager *assetManager)
         : Protocol ("PerfectSecureMPC", argc, argv)
 {
-
     string circuitFile = this->getParser().getValueByKey(arguments, "circuitFile");
     this->times = stoi(this->getParser().getValueByKey(arguments, "internalIterationsNumber"));
     string fieldType = this->getParser().getValueByKey(arguments, "fieldType");
@@ -385,8 +383,6 @@ ProtocolParty<FieldType>::ProtocolParty(int argc, char* argv [],
     T = n/3 - 1;
     this->inputsFile = this->getParser().getValueByKey(arguments, "inputFile");
     this->outputFile = this->getParser().getValueByKey(arguments, "outputFile");
-
-    cout << "Initialize input and outputs" << endl;
     if(n%3 > 0)
     {
         T++;
@@ -1992,11 +1988,7 @@ string ProtocolParty<FieldType>::outputPhase()
                 // someone cheated!
                 return "Error";
             }
-            if(flag_print_output){
-                output += field->elementToString(interpolate(x1));
-
-            }
-
+            output += field->elementToString(interpolate(x1)) + " ";
             counter++;
         }
     }

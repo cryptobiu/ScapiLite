@@ -36,14 +36,13 @@ vector<pair<string, string>> CmdParser::parseArguments(string protocolName, int 
     //Put all other parameters in the map
     for(int i=1; i<argc; i+=2)
     {
+        if(NULL == argv[i])
+            break;
 
         key = getKey(string(argv[i]));
         value = getKey(string(argv[i+1]));
         arguments.emplace_back(make_pair(key, value));
-
-        cout<<"key = "<< key <<" value = "<< value <<endl;
     }
-
     return arguments;
 }
 
