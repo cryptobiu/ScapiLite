@@ -25,6 +25,10 @@ ScapiLiteAPK/app/CMakeFiles
 ScapiLiteAPK/app/src/main/cpp/CMakeFiles/
 ScapiLiteAPK/app/.externalNativeBuild/*
 ScapiLiteAPK/app/app.iml
+ScapiLiteAPK/app/biumatrix.jks
+ScapiLiteAPK/app/google-services.json
+ScapiLiteAPK/app/release/
+
 
 # Ignore Gradle GUI config
 ScapiLiteAPK/gradle-app.setting

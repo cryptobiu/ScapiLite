@@ -1,7 +1,6 @@
 package crypto.cs.biu.scapilite.util;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
@@ -14,8 +13,9 @@ public class ConnectionHelper
 
     //    public static String BASE_URL = "http://10.0.7.60:8088/biumatrix/";
 //    public static String BASE_URL_WEB = "http://10.0.7.60:4200/";
-    public static String BASE_URL = "http://biumatrix.inellipse.com/biumatrix/";
-    public static String BASE_URL_WEB = "http://biu.inellipse.com/";
+//    public static String BASE_URL = "http://biumatrix.inellipse.com/biumatrix/";
+//    public static String BASE_URL_WEB = "http://biu.inellipse.com/";
+    public static String BASE_URL = "http://privatepoll.biu-mpc.io/biumatrix/";
 
     //Matrix
     public static String BASE_URL_MATRIX = "http://35.171.69.162";
