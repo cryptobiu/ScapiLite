@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AnonyPoll</string>
+    <string name="app_name">PrivatePoll</string>
     <string name="no">no</string>
     <string name="yes">yes</string>
     <string name="ok">ok</string>
@@ -8,8 +8,8 @@
         connections!
     </string>
 
-    <string name="facebook_app_id">570434523329808</string>
-    <string name="fb_login_protocol_scheme">fb570434523329808</string>
+    <string name="facebook_app_id">319636112124414</string>
+    <string name="fb_login_protocol_scheme">fb319636112124414</string>
     <string name="login">AnonyPoll Login</string>
     <string name="welcome">Welcome</string>
     <string name="new_poll">This poll will be executed on</string>

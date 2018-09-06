@@ -1,4 +1,4 @@
-package crypto.cs.biu.scapilite;
+package biu.cs.crypto.scapilite;
 
 import org.junit.Test;
 

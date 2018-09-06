@@ -1,4 +1,4 @@
-package crypto.cs.biu.scapilite;
+package biu.cs.crypto.scapilite;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import crypto.cs.biu.scapilite.ProtocolActivity;
 import crypto.cs.biu.scapilite.model.MatrixResponse;
 import crypto.cs.biu.scapilite.util.PreferencesManager;
 

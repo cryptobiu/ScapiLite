@@ -3,11 +3,11 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 26
     defaultConfig {
-        applicationId "crypto.cs.biu.scapilite"
+        applicationId "biu.cs.crypto.scapilite"
         minSdkVersion 21
         targetSdkVersion 26
-        versionCode 20180719
-        versionName "0.6"
+        versionCode 20180906
+        versionName "0.61"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
@@ -18,16 +18,16 @@ android {
     signingConfigs {
         debug {
             storeFile file("biumatrix.jks")
-            storePassword "IvP66247"
-            keyAlias "biumatrix"
-            keyPassword "IvP66247"
+            storePassword "KG65mJGqzIVwLjE1ZZu1"
+            keyAlias "key0"
+            keyPassword "c4D4wzeBjoF84Yvu5jcO"
         }
 
         release {
             storeFile file("biumatrix.jks")
-            storePassword "IvP66247"
-            keyAlias "biumatrix"
-            keyPassword "IvP66247"
+            storePassword "KG65mJGqzIVwLjE1ZZu1"
+            keyAlias "key0"
+            keyPassword "c4D4wzeBjoF84Yvu5jcO"
         }
     }
 

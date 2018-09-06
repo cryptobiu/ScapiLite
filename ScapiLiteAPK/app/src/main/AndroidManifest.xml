@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="crypto.cs.biu.scapilite">
+    package="biu.cs.crypto.scapilite">
 
 
-    <uses-permission android:name="crypto.cs.biu.scapilite.alarm.permission.SET_ALARM"/>
+    <uses-permission android:name="biu.cs.crypto.scapilite.alarm.permission.SET_ALARM"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
@@ -40,7 +40,7 @@
         <activity
             android:name=".ui.activity.PollsPrivateTrustedActivity"
             android:label="@string/offline_mode"/>
-        <activity android:name=".ui.activity.WebViewActivity"/>
+        <activity android:name="biu.cs.crypto.scapilite.ui.activity.WebViewActivity"/>
         <activity
             android:name=".ui.activity.LoginActivity"
             android:label="@string/login"/>
@@ -60,10 +60,21 @@
             android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
             android:label="@string/app_name"/>
 
+        <activity
+            android:name="com.facebook.CustomTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/fb_login_protocol_scheme" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".background.PollExecutionService"
             android:enabled="true"
-            android:exported="false"></service>
+            android:exported="false"/>
 
         <receiver
             android:name=".background.AlarmReceiver"
