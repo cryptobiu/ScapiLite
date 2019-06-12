@@ -121,7 +121,7 @@ public class LoginActivity extends AppCompatActivity {
         });
         loginButton = (LoginButton) findViewById(R.id.login_button);
         loginButton.setReadPermissions(Arrays.asList(EMAIL));
-        loginButton.setReadPermissions("public_profile");
+        loginButton.setReadPermissions("email", "public_profile");
 
         // Callback registration
         loginButton.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
@@ -149,7 +149,8 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onError(FacebookException exception) {
-                // App code
+                Logger.logError("Error login to facebook: " + exception.getMessage(),
+                        exception);
             }
         });
     }

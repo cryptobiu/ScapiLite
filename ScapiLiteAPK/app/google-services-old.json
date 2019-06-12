@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "621886435495",
+    "firebase_url": "https://biumatrix-cbd2b.firebaseio.com",
+    "project_id": "biumatrix-cbd2b",
+    "storage_bucket": "biumatrix-cbd2b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:621886435495:android:0a4b51c71785f020",
+        "android_client_info": {
+          "package_name": "biu.cs.crypto.scapilite"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "621886435495-ucurr8m5j1kgbkurnjat132k3lf6dru6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqF7zfZNL7d7plTKyhwdzRqNn2wdQWDJM"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

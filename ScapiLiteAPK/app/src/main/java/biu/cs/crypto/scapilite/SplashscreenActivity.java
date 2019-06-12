@@ -66,22 +66,5 @@ public class SplashscreenActivity extends AppCompatActivity
 
         }
     }
-
-
-//        Calendar caltEST = Calendar.getInstance();
-//        caltEST.add(Calendar.SECOND, 5);
-//
-//        //Create alarm manager
-//        AlarmManager alarmMgr0 = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-//
-//        //Create pending intent & register it to your alarm notifier class
-//        Intent intent0 = new Intent(this, AlarmReceiver.class);
-//        intent0.putExtra(AppConstants.POLL_STATUS, AppConstants.POLL_STATUS_READY_FOR_PREPARATION);
-//        intent0.putExtra(AppConstants.POLL_ID, "123");
-//        intent0.putExtra(AppConstants.POLL_NAME, "Test031");
-//        intent0.setAction("matrix.alarm");
-//        PendingIntent pendingIntent0 = PendingIntent.getBroadcast(this, 12020, intent0, PendingIntent.FLAG_ONE_SHOT);
-//        alarmMgr0.setExact(AlarmManager.RTC_WAKEUP, caltEST.getTimeInMillis(), pendingIntent0);
-
 }
 
