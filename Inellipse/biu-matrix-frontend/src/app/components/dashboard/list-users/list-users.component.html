@@ -1,0 +1,20 @@
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <h1 class="h2 dark-blue">Users</h1>
+</div>
+<table class="table table-hover">
+  <thead class="thead-dark">
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Gender</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let user of users">
+      <td class="align-middle">
+        <img alt="32x32" class="mr-2 rounded" style="width: 32px; height: 32px;" [src]="user.image ? user.image : 'assets/default-avatar.png'" class="rounded-circle" /> {{user.name}}</td>
+      <td class="align-middle">{{user.email}}</td>
+      <td class="align-middle" style="text-transform: capitalize">{{user.gender}}</td>
+    </tr>
+  </tbody>
+</table>

@@ -1,0 +1,16 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">
+    <img src="assets/logo.png" style="height: 70px;" />
+  </a>
+</nav>
+<div role="main" class="inner cover text-center">
+  <h1 class="cover-heading">{{poll?.title}}</h1>
+  <p class="lead">{{poll?.description}}</p>
+  <p class="lead">Execution time {{poll?.executionTime | date: 'medium'}}</p>
+  <p class="lead" style="max-width: 500px; margin-left: auto; margin-right: auto; padding: 15px;">
+    <input type="text" class="form-control" [(ngModel)]="pollAnswer" />
+  </p>
+  <p class="lead">
+  <button type="button" class="btn btn-lg btn-biu" (click)="answer()">Answer</button>
+  </p>
+</div>
