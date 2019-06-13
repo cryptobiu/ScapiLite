@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="crypto.cs.biu.scapilite">
+
+
+    <uses-permission android:name="crypto.cs.biu.scapilite.alarm.permission.SET_ALARM"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+
+    <application
+        android:name=".application.AppController"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name=".SplashscreenActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/app_name"/>
+        <activity
+            android:name=".ui.activity.PollsActivity"
+            android:label="@string/polls"/>
+        <activity
+            android:name=".ui.activity.PollsOnlineOfflineActivity"
+            android:label="@string/execution_mode"/>
+        <activity
+            android:name=".ui.activity.PollsPrivateTrustedActivity"
+            android:label="@string/offline_mode"/>
+        <activity android:name=".ui.activity.WebViewActivity"/>
+        <activity
+            android:name=".ui.activity.LoginActivity"
+            android:label="@string/login"/>
+        <!--<activity-->
+            <!--android:name=".ui.activity.LoginQuestionsActivity"-->
+            <!--android:label="@string/login"/>-->
+        <activity
+            android:name=".ui.activity.PollResultActivity"
+            android:label="@string/results"/>
+
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id"/>
+
+        <activity
+            android:name="com.facebook.FacebookActivity"
+            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:label="@string/app_name"/>
+
+        <service
+            android:name=".background.PollExecutionService"
+            android:enabled="true"
+            android:exported="false"></service>
+
+        <receiver
+            android:name=".background.AlarmReceiver"
+            android:exported="true"
+            android:process=":remote">
+            <intent-filter>
+                <action android:name="android.intent.action.NOTIFY"/>
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>
