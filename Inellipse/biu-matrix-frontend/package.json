@@ -47,7 +47,7 @@
     "querystringify": "^2.1.1",
     "randomatic": "^3.1.1",
     "rxjs": "^5.5.11",
-    "serialize-javascript": "^2.1.1",
+    "serialize-javascript": "^3.1.0",
     "stringstream": "^1.0.0",
     "tar": "^4.4.13",
     "timespan": "^2.3.0",
